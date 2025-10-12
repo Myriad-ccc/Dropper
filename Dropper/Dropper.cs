@@ -19,11 +19,10 @@ namespace Dropper
 
         private Block block;
         private Point startPoint;
-        private Timer gravityTimer;
 
         private ClickFilter massDisplayFilter;
 
-        private Gravity gravity = new Gravity();
+        private readonly Gravity gravity = new Gravity();
 
         public Form1() => InitializeComponent();
 
@@ -240,7 +239,12 @@ namespace Dropper
                 }
             };
 
-            parent.MouseUp += (s, ev) => block.MouseDragging = false;
+            parent.MouseUp += (s, ev) =>
+            {
+                block.MouseDragging = false;
+                block.VX = 0;
+                block.VY = 0;
+            };
 
             parent.MouseMove += (s, ev) =>
             {
@@ -287,8 +291,7 @@ namespace Dropper
 
         private void CheckGravity(Block block)
         {
-            gravityTimer = new Timer() { Interval = 10 };
-            gravityTimer.Tick += (s, ev) =>
+            gravity.Timer.Tick += (s, ev) =>
             {
                 if (!block.MouseDragging)
                 {
@@ -297,7 +300,7 @@ namespace Dropper
                     area.Invalidate();
                 }
             };
-            gravityTimer.Start();
+            gravity.Timer.Start();
         }
 
         private void ToolBar()
