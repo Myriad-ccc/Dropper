@@ -27,8 +27,8 @@ namespace Dropper
         {
             block.Bounds = new RectangleF(
                 new PointF(
-                    block.X + block.Weight * X,
-                    block.Y + block.Weight * Y),
+                    block.X + block.Mass * X,
+                    block.Y + block.Mass * Y),
                 block.Size);
         }
 
@@ -44,12 +44,12 @@ namespace Dropper
             if (block.X != block.MagneticCore.X)
             {
                 float dx = block.MagneticCore.X - block.X;
-                stepX = Math.Min(Math.Abs(dx), block.Weight) * Math.Sign(dx);
+                stepX = Math.Min(Math.Abs(dx), block.Mass) * Math.Sign(dx);
             }
             if (block.Y != block.MagneticCore.Y)
             {
                 float dy = block.MagneticCore.Y - block.Y;
-                stepY = Math.Min(Math.Abs(dy), block.Weight) * Math.Sign(dy);
+                stepY = Math.Min(Math.Abs(dy), block.Mass) * Math.Sign(dy);
             }
 
             block.Bounds = new RectangleF(

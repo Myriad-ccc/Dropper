@@ -21,7 +21,7 @@ namespace Dropper
         private Point startPoint;
         private Timer gravityTimer;
 
-        private ClickFilter weightDisplayFilter;
+        private ClickFilter massDisplayFilter;
 
         private Gravity gravity = new Gravity();
 
@@ -57,8 +57,8 @@ namespace Dropper
 
         private void Form1_Closing(object sender, EventArgs e)
         {
-            if (weightDisplayFilter != null)
-                Application.RemoveMessageFilter(weightDisplayFilter);
+            if (massDisplayFilter != null)
+                Application.RemoveMessageFilter(massDisplayFilter);
         }
 
         private void BorderMenu()
@@ -126,17 +126,17 @@ namespace Dropper
         {
             var target = parent ? control.Parent : control;
 
-            bool dragging = false;
+            bool MouseDragging = false;
             Point cursorPos = Cursor.Position;
 
             control.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
                 {
-                    dragging = true;
+                    MouseDragging = true;
                     cursorPos = Cursor.Position;
                 }
-                if (ev.Button == MouseButtons.Right && !dragging)
+                if (ev.Button == MouseButtons.Right && !MouseDragging)
                 {
                     TitleColor = QOL.RandomColor();
                     ShadowTitleColor = QOL.RandomColor();
@@ -144,11 +144,11 @@ namespace Dropper
                 }
             };
 
-            control.MouseUp += (s, ev) => dragging = false;
+            control.MouseUp += (s, ev) => MouseDragging = false;
 
             control.MouseMove += (s, ev) =>
             {
-                if (dragging)
+                if (MouseDragging)
                 {
                     int deltaX = Cursor.Position.X - cursorPos.X;
                     int deltaY = Cursor.Position.Y - cursorPos.Y;
@@ -228,23 +228,23 @@ namespace Dropper
 
         public void DragBlock(Block block, Control parent)
         {
-            block.Dragging = false;
+            block.MouseDragging = false;
             PointF cursorPos = Cursor.Position;
 
             parent.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left && block.Bounds.Contains(ev.Location))
                 {
-                    block.Dragging = true;
+                    block.MouseDragging = true;
                     cursorPos = Cursor.Position;
                 }
             };
 
-            parent.MouseUp += (s, ev) => block.Dragging = false;
+            parent.MouseUp += (s, ev) => block.MouseDragging = false;
 
             parent.MouseMove += (s, ev) =>
             {
-                if (block.Dragging)
+                if (block.MouseDragging)
                 {
                     float deltaX = Cursor.Position.X - cursorPos.X;
                     float deltaY = Cursor.Position.Y - cursorPos.Y;
@@ -290,7 +290,7 @@ namespace Dropper
             gravityTimer = new Timer() { Interval = 10 };
             gravityTimer.Tick += (s, ev) =>
             {
-                if (!block.Dragging)
+                if (!block.MouseDragging)
                 {
                     gravity.Apply(block);
                     ConstrainToArea(block, area);
@@ -302,7 +302,7 @@ namespace Dropper
 
         private void ToolBar()
         {
-            var weightOptions = new CustomPanel()
+            var massOptions = new CustomPanel()
             {
                 ForeColor = Color.Transparent,
                 BackColor = QOL.Colors.SameRGB(35),
@@ -310,14 +310,14 @@ namespace Dropper
                 Height = 24,
                 Location = new Point(toolBar.Left, toolBar.Top)
             };
-            toolBar.Controls.Add(weightOptions);
-            weightOptions.Paint += (s, ev) =>
+            toolBar.Controls.Add(massOptions);
+            massOptions.Paint += (s, ev) =>
             {
                 using (var pen = new Pen(BackColor, 1f))
-                    ev.Graphics.DrawRectangle(pen, 0, 0, weightOptions.Width - 1, weightOptions.Height - 1);
+                    ev.Graphics.DrawRectangle(pen, 0, 0, massOptions.Width - 1, massOptions.Height - 1);
             };
 
-            var weightLabel = new Label()
+            var massLabel = new Label()
             {
                 Tag = "ToolBarInfoLabel",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
@@ -325,44 +325,44 @@ namespace Dropper
                 ForeColor = Color.White,
                 Font = new Font(QOL.VCROSDMONO, 16f),
                 Text = "Weight:",
-                Height = weightOptions.Height,
+                Height = massOptions.Height,
             };
-            weightOptions.Controls.Add(weightLabel);
+            massOptions.Controls.Add(massLabel);
 
-            float originalWeight = block.Weight;
-            var weightDisplay = new TextBox()
+            float originalMass = block.Mass;
+            var massDisplay = new TextBox()
             {
                 Tag = "ToolBarInfoLabel",
                 Anchor = AnchorStyles.Left,
                 BackColor = QOL.Colors.SameRGB(100),
                 ForeColor = Color.White,
                 Font = new Font(QOL.VCROSDMONO, 16f),
-                Text = $"{block.Weight:F1}",
-                Width = weightLabel.Width,
+                Text = $"{block.Mass:F1}",
+                Width = massLabel.Width,
                 BorderStyle = BorderStyle.None,
                 TabStop = false,
             };
-            QOL.Align.Right(weightDisplay, weightLabel, 6);
-            weightDisplay.TextChanged += (s, ev) =>
+            QOL.Align.Right(massDisplay, massLabel, 6);
+            massDisplay.TextChanged += (s, ev) =>
             {
-                if (float.TryParse(weightDisplay.Text, out float newWeight))
-                    block.Weight = newWeight;
-                else block.Weight = originalWeight;
+                if (float.TryParse(massDisplay.Text, out float newMass))
+                    block.Mass = newMass;
+                else block.Mass = originalMass;
             };
-            weightDisplay.LostFocus += (s, ev) =>
+            massDisplay.LostFocus += (s, ev) =>
             {
-                if (string.IsNullOrEmpty(weightDisplay.Text)
-                || !float.TryParse(weightDisplay.Text, out _))
+                if (string.IsNullOrEmpty(massDisplay.Text)
+                || !float.TryParse(massDisplay.Text, out _))
                 {
-                    weightDisplay.Text = originalWeight.ToString("F1");
-                    block.Weight = originalWeight;
+                    massDisplay.Text = originalMass.ToString("F1");
+                    block.Mass = originalMass;
                 }
             };
-            weightOptions.Controls.Add(weightDisplay);
-            weightDisplayFilter = new ClickFilter(weightDisplay);
-            Application.AddMessageFilter(weightDisplayFilter);
+            massOptions.Controls.Add(massDisplay);
+            massDisplayFilter = new ClickFilter(massDisplay);
+            Application.AddMessageFilter(massDisplayFilter);
 
-            var minusWeight = new Button()
+            var minusMass = new Button()
             {
                 UseCompatibleTextRendering = true,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -374,15 +374,15 @@ namespace Dropper
                 FlatStyle = FlatStyle.Flat,
                 Size = new Size(24, 24)
             };
-            QOL.Align.Right(minusWeight, weightDisplay, 4);
-            weightOptions.Controls.Add(minusWeight);
-            minusWeight.MouseClick += (s, ev) =>
+            QOL.Align.Right(minusMass, massDisplay, 4);
+            massOptions.Controls.Add(minusMass);
+            minusMass.MouseClick += (s, ev) =>
             {
-                block.Weight = block.Weight - 5 > int.MinValue ? block.Weight - 5 : block.Weight;
-                weightDisplay.Text = block.Weight.ToString("F1");
+                block.Mass = block.Mass - 5 > int.MinValue ? block.Mass - 5 : block.Mass;
+                massDisplay.Text = block.Mass.ToString("F1");
             };
 
-            var plusWeight = new Button()
+            var plusMass = new Button()
             {
                 UseCompatibleTextRendering = true,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -392,17 +392,17 @@ namespace Dropper
                 Text = "+",
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
+                Size = minusMass.Size
             };
-            QOL.Align.Right(plusWeight, minusWeight, 1);
-            weightOptions.Controls.Add(plusWeight);
-            plusWeight.MouseClick += (s, ev) =>
+            QOL.Align.Right(plusMass, minusMass, 1);
+            massOptions.Controls.Add(plusMass);
+            plusMass.MouseClick += (s, ev) =>
             {
-                block.Weight = block.Weight + 5 < int.MaxValue ? block.Weight + 5 : block.Weight;
-                weightDisplay.Text = block.Weight.ToString("F1");
+                block.Mass = block.Mass + 5 < int.MaxValue ? block.Mass + 5 : block.Mass;
+                massDisplay.Text = block.Mass.ToString("F1");
             };
 
-            var zeroWeight = new Button()
+            var zeroMass = new Button()
             {
                 TextAlign = ContentAlignment.TopCenter,
                 ForeColor = Color.Gray,
@@ -411,17 +411,17 @@ namespace Dropper
                 Text = "0",
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
+                Size = minusMass.Size
             };
-            QOL.Align.Right(zeroWeight, plusWeight, 1);
-            weightOptions.Controls.Add(zeroWeight);
-            zeroWeight.MouseClick += (s, ev) =>
+            QOL.Align.Right(zeroMass, plusMass, 1);
+            massOptions.Controls.Add(zeroMass);
+            zeroMass.MouseClick += (s, ev) =>
             {
-                block.Weight = 0;
-                weightDisplay.Text = block.Weight.ToString("F1");
+                block.Mass = 0;
+                massDisplay.Text = block.Mass.ToString("F1");
             };
 
-            var oneWeight = new Button()
+            var oneMass = new Button()
             {
                 UseCompatibleTextRendering = true,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -431,17 +431,17 @@ namespace Dropper
                 Text = "1",
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
+                Size = minusMass.Size
             };
-            QOL.Align.Right(oneWeight, zeroWeight, 1);
-            weightOptions.Controls.Add(oneWeight);
-            oneWeight.MouseClick += (s, ev) =>
+            QOL.Align.Right(oneMass, zeroMass, 1);
+            massOptions.Controls.Add(oneMass);
+            oneMass.MouseClick += (s, ev) =>
             {
-                block.Weight = 1;
-                weightDisplay.Text = block.Weight.ToString("F1");
+                block.Mass = 1;
+                massDisplay.Text = block.Mass.ToString("F1");
             };
 
-            var resetWeight = new Button()
+            var resetMass = new Button()
             {
                 UseCompatibleTextRendering = true,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -451,17 +451,17 @@ namespace Dropper
                 Text = "↻",
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
+                Size = minusMass.Size
             };
-            QOL.Align.Right(resetWeight, oneWeight, 1);
-            weightOptions.Controls.Add(resetWeight);
-            resetWeight.MouseClick += (s, ev) =>
+            QOL.Align.Right(resetMass, oneMass, 1);
+            massOptions.Controls.Add(resetMass);
+            resetMass.MouseClick += (s, ev) =>
             {
-                block.Weight = originalWeight;
-                weightDisplay.Text = block.Weight.ToString("F1");
+                block.Mass = originalMass;
+                massDisplay.Text = block.Mass.ToString("F1");
             };
 
-            var absoluteWeight = new Button()
+            var absoluteMass = new Button()
             {
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = Color.LightGoldenrodYellow,
@@ -472,18 +472,18 @@ namespace Dropper
                 FlatStyle = FlatStyle.Flat,
                 Size = new Size(48, 24)
             };
-            QOL.Align.Right(absoluteWeight, resetWeight, 1);
-            weightOptions.Controls.Add(absoluteWeight);
-            absoluteWeight.MouseClick += (s, ev) =>
+            QOL.Align.Right(absoluteMass, resetMass, 1);
+            massOptions.Controls.Add(absoluteMass);
+            absoluteMass.MouseClick += (s, ev) =>
             {
-                if (Math.Abs(block.Weight) > int.MinValue && Math.Abs(block.Weight) < int.MaxValue)
-                    block.Weight = Math.Abs(block.Weight);
+                if (Math.Abs(block.Mass) > int.MinValue && Math.Abs(block.Mass) < int.MaxValue)
+                    block.Mass = Math.Abs(block.Mass);
                 else
-                    block.Weight = originalWeight;
-                weightDisplay.Text = block.Weight.ToString("F1");
+                    block.Mass = originalMass;
+                massDisplay.Text = block.Mass.ToString("F1");
 
             };
-            weightOptions.Bounds = new Rectangle(weightOptions.Location, new Size(weightOptions.Controls[weightOptions.Controls.Count - 1].Right, weightOptions.Height));
+            massOptions.Bounds = new Rectangle(massOptions.Location, new Size(massOptions.Controls[massOptions.Controls.Count - 1].Right, massOptions.Height));
 
 
             var pivotOptions = new CustomPanel()
@@ -492,8 +492,8 @@ namespace Dropper
                 BackColor = QOL.Colors.SameRGB(35),
                 Width = toolBar.Width / 2,
                 //Height = 24,
-                Height = toolBar.Height - weightOptions.Height,
-                Location = new Point(toolBar.Left, toolBar.Top + weightOptions.Height + 1)
+                Height = toolBar.Height - massOptions.Height,
+                Location = new Point(toolBar.Left, toolBar.Top + massOptions.Height + 1)
             };
             toolBar.Controls.Add(pivotOptions);
             pivotOptions.Paint += (s, ev) =>
@@ -600,15 +600,7 @@ namespace Dropper
 
             bool randomPivotOn = false;
             var randomPivotTimer = new Timer() { Interval = 1000};
-            Action PivotRandomly = () =>
-            {
-                int randomRow = random.Next(cards.GetLength(0));
-                int randomCol = random.Next(cards.GetLength(1));
-                gravity.X = offsets[randomCol];
-                gravity.Y = offsets[randomRow];
-                cards[randomRow, randomCol].SetActive();
-            };
-            randomPivotTimer.Tick += (s, ev) => Card.Activated(random.Next(cards.GetLength(0)), random.Next(cards.GetLength(1)));
+            randomPivotTimer.Tick += (s, ev) => cards[random.Next(cards.GetLength(0)), random.Next(cards.GetLength(1))].SetActive();
 
             var copyColor = randomPivot.ForeColor;
             randomPivot.MouseDown += (s, ev) =>
@@ -640,7 +632,7 @@ namespace Dropper
                 BackColor = QOL.Colors.SameRGB(35),
                 Width = toolBar.Width / 2,
                 //Height = 24,
-                Height = toolBar.Height - weightOptions.Height,
+                Height = toolBar.Height - massOptions.Height,
             };
             QOL.Align.Right(gravityOptions, pivotOptions);
             toolBar.Controls.Add(gravityOptions);
@@ -683,14 +675,6 @@ namespace Dropper
             };
 
             gravityOptions.Controls.Add(gravityChoice);
-
-            borderBox.MouseClick += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Right)
-                {
-                    MessageBox.Show($"{block.Gravity}");
-                }
-            };
         }
     }
 }
