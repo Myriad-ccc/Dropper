@@ -88,7 +88,7 @@ namespace Dropper
 
                 public static void Center(Control thisControl, Control otherControl, int? gap = null) =>
                     thisControl.Location = new Point(
-                        otherControl.Location.X + otherControl.Width / 2 - thisControl.Width / 2,
+                        otherControl.Location.X,
                         otherControl.Location.Y + otherControl.Height + CheckGap(gap));
 
                 public static void LeftCenter(Control thisControl, Control otherControl, int? gap = null) =>

@@ -24,6 +24,11 @@ namespace Dropper
                 case Block.GravityMode.Magnetic:
                     MagneticGravity(block);
                     break;
+                //case Block.GravityMode.LinearBounce:
+                //    block.PeakAltitude = block.Y;
+                //    block.MinAltitude = block.PeakAltitude;
+                //    Bounce(block);
+                //    break;
             }
         }
 
@@ -31,8 +36,8 @@ namespace Dropper
         {
             block.Bounds = new RectangleF(
                 new PointF(
-                    block.X + block.Mass * X,
-                    block.Y + block.Mass * Y),
+                    block.X + block.Weight * X,
+                    block.Y + block.Weight * Y),
                 block.Size);
         }
 
@@ -40,17 +45,10 @@ namespace Dropper
         {
             float deltaTime = updateRate / 1000f;
 
-            float terminalVelocity = block.Mass * block.Area / 10;
+            float terminalVelocity = (block.Weight * block.Area) / 10;
 
-            block.VX = Math.Min(block.VX + block.Mass * deltaTime * 10 * X, terminalVelocity);
-            block.VY = Math.Min(block.VY + block.Mass * deltaTime * 10 * Y, terminalVelocity);
-
-            float currentSpeed = (float)Math.Sqrt(block.VX * block.VX + block.VY * block.VY);
-            if (currentSpeed > terminalVelocity)
-            {
-                block.VX = (block.VX * currentSpeed) / terminalVelocity;
-                block.VY = (block.VY * currentSpeed) / terminalVelocity;
-            }
+            block.VX = Math.Min(block.VX + block.Weight * deltaTime * 10 * X, terminalVelocity);
+            block.VY = Math.Min(block.VY + block.Weight * deltaTime * 10 * Y, terminalVelocity);
 
             block.Bounds = new RectangleF(
                 new PointF(
@@ -59,41 +57,6 @@ namespace Dropper
                 block.Size);
         }
 
-        //private void DynamicGravityALT(Block block, int updateRate)
-        //{
-        //    float ppm = 64f;
-        //    float deltaTime = updateRate / 1000f; // in seconds
-
-        //    float gravityX = Environment.g * X * ppm; // in pixels
-        //    float gravityY = Environment.g * Y * ppm;
-
-        //    float VXm = block.VX / ppm;
-        //    float VYm = block.VY / ppm;
-
-        //    float AreaM = block.Area / (ppm * ppm);
-
-        //    float dragX = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VXm * Math.Abs(VXm));
-        //    float dragY = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VYm * Math.Abs(VYm));
-
-        //    float dragAccelerationXm = -Math.Sign(VXm) * (Math.Abs(dragX) / block.Mass);
-        //    float dragAccelerationYm = -Math.Sign(VYm) * (Math.Abs(dragY) / block.Mass);
-
-        //    float dragAccelerationXp = dragAccelerationXm / ppm;
-        //    float dragAccelerationYp = dragAccelerationYm / ppm;
-
-        //    float netAccelerationX = gravityX + dragAccelerationXp;
-        //    float netAccelerationY = gravityY + dragAccelerationYp;
-
-        //    block.VX += netAccelerationX * deltaTime;
-        //    block.VY += netAccelerationY * deltaTime;
-
-        //    block.Bounds = new RectangleF(
-        //        new PointF(
-        //            block.X + block.VX * deltaTime,
-        //            block.Y + block.VY * deltaTime),
-        //        block.Size);
-        //}
-
         private void MagneticGravity(Block block)
         {
             float stepX = 0f;
@@ -101,12 +64,12 @@ namespace Dropper
             if (block.X != block.MagneticCore.X)
             {
                 float dx = block.MagneticCore.X - block.X;
-                stepX = Math.Min(Math.Abs(dx), block.Mass) * Math.Sign(dx);
+                stepX = Math.Min(Math.Abs(dx), block.Weight) * Math.Sign(dx);
             }
             if (block.Y != block.MagneticCore.Y)
             {
                 float dy = block.MagneticCore.Y - block.Y;
-                stepY = Math.Min(Math.Abs(dy), block.Mass) * Math.Sign(dy);
+                stepY = Math.Min(Math.Abs(dy), block.Weight) * Math.Sign(dy);
             }
 
             block.Bounds = new RectangleF(
@@ -115,5 +78,30 @@ namespace Dropper
                     block.Y + stepY),
                 block.Size);
         }
+
+        //private void Bounce(Block block)
+        //{
+        //    bool canBounce = true;
+        //    if (block.MouseDragging)
+        //        canBounce = false;
+
+        //    if (block.Y > block.PeakAltitude)
+        //        block.PeakAltitude = block.Y;
+        //    if (block.MinAltitude < block.Y)
+        //        block.MinAltitude = block.Y;
+        //    else
+        //    {
+        //        if (canBounce)
+        //        {
+        //            block.Bounds = new RectangleF(
+        //                new PointF(
+        //                    block.X + block.PeakAltitude * 0.5f * X,
+        //                    block.Y + block.PeakAltitude * 0.5f * Y),
+        //                block.Size);
+        //        }
+        //        else
+        //            LinearGravity(block);
+        //    }
+        //}
     }
 }
