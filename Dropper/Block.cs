@@ -7,7 +7,7 @@ namespace Dropper
     {
         public RectangleF Bounds { get; set; }
         public bool MouseDragging { get; set; }
-        public float Mass { get; set; }
+        public float Mass { get; set; } = 10;
         public SizeF Size = new Size(64, 64);
 
         public Color? Color { get; set; }
@@ -46,8 +46,6 @@ namespace Dropper
 
         public void CalculateDrag()
         {
-            DragX = -(float)(0.5 * Environment.AirDensity * VX * Math.Abs(VX) * Area * DragCoefficient);
-            DragY = -(float)(0.5 * Environment.AirDensity * VY * Math.Abs(VY) * Area * DragCoefficient);
         }
     }
 }

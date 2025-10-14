@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -39,24 +40,30 @@ namespace Dropper
         private const float ppm = 64f;
         private void DynamicGravity(Block block, int updateRate)
         {
-            if (block.Mass <= 0f) return;
-            float deltaTime = updateRate / 1000f; //convert to seconds
+            float deltaTime = updateRate / 1000f; // in seconds
 
-            float gx = block.Weight * X * ppm; //total gravity acting on the object
-            float gy = block.Weight * Y * ppm;
+            float gravityX = Environment.g * X * ppm; // in pixels
+            float gravityY = Environment.g * Y * ppm;
 
-            block.CalculateDrag();
-            float dx = block.DragX; //total drag acting on the object
-            float dy = block.DragY;
+            float VXm = block.VX / ppm;
+            float VYm = block.VY / ppm;
 
-            float ndx = gx + dx; //net displacement acting on the object
-            float ndy = gy + dy;
+            float AreaM = block.Area / (ppm * ppm);
 
-            float accx = ndx / block.Mass; //a = F / m (https://en.wikipedia.org/wiki/Newton%27s_laws_of_motion)
-            float accy = ndy / block.Mass;
+            float dragX = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VXm * Math.Abs(VXm));
+            float dragY = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VYm * Math.Abs(VYm));
 
-            block.VX += accx * deltaTime; //v1 = v0 + a * dt
-            block.VY += accy * deltaTime;
+            float dragAccelerationXm = -Math.Sign(VXm) * (Math.Abs(dragX) / block.Mass);
+            float dragAccelerationYm = -Math.Sign(VYm) * (Math.Abs(dragY) / block.Mass);
+
+            float dragAccelerationXp = dragAccelerationXm / ppm;
+            float dragAccelerationYp = dragAccelerationYm / ppm;
+
+            float netAccelerationX = gravityX + dragAccelerationXp;
+            float netAccelerationY = gravityY + dragAccelerationYp;
+
+            block.VX += netAccelerationX * deltaTime;
+            block.VY += netAccelerationY * deltaTime;
 
             block.Bounds = new RectangleF(
                 new PointF(
