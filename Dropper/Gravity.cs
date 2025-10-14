@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -37,40 +36,63 @@ namespace Dropper
                 block.Size);
         }
 
-        private const float ppm = 64f;
         private void DynamicGravity(Block block, int updateRate)
         {
-            float deltaTime = updateRate / 1000f; // in seconds
+            float deltaTime = updateRate / 1000f;
 
-            float gravityX = Environment.g * X * ppm; // in pixels
-            float gravityY = Environment.g * Y * ppm;
+            float terminalVelocity = block.Mass * block.Area / 10;
 
-            float VXm = block.VX / ppm;
-            float VYm = block.VY / ppm;
+            block.VX = Math.Min(block.VX + block.Mass * deltaTime * 10 * X, terminalVelocity);
+            block.VY = Math.Min(block.VY + block.Mass * deltaTime * 10 * Y, terminalVelocity);
 
-            float AreaM = block.Area / (ppm * ppm);
-
-            float dragX = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VXm * Math.Abs(VXm));
-            float dragY = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VYm * Math.Abs(VYm));
-
-            float dragAccelerationXm = -Math.Sign(VXm) * (Math.Abs(dragX) / block.Mass);
-            float dragAccelerationYm = -Math.Sign(VYm) * (Math.Abs(dragY) / block.Mass);
-
-            float dragAccelerationXp = dragAccelerationXm / ppm;
-            float dragAccelerationYp = dragAccelerationYm / ppm;
-
-            float netAccelerationX = gravityX + dragAccelerationXp;
-            float netAccelerationY = gravityY + dragAccelerationYp;
-
-            block.VX += netAccelerationX * deltaTime;
-            block.VY += netAccelerationY * deltaTime;
+            float currentSpeed = (float)Math.Sqrt(block.VX * block.VX + block.VY * block.VY);
+            if (currentSpeed > terminalVelocity)
+            {
+                block.VX = (block.VX * currentSpeed) / terminalVelocity;
+                block.VY = (block.VY * currentSpeed) / terminalVelocity;
+            }
 
             block.Bounds = new RectangleF(
                 new PointF(
                     block.X + block.VX * deltaTime,
-                    block.Y + block.VY * deltaTime), 
+                    block.Y + block.VY * deltaTime),
                 block.Size);
         }
+
+        //private void DynamicGravityALT(Block block, int updateRate)
+        //{
+        //    float ppm = 64f;
+        //    float deltaTime = updateRate / 1000f; // in seconds
+
+        //    float gravityX = Environment.g * X * ppm; // in pixels
+        //    float gravityY = Environment.g * Y * ppm;
+
+        //    float VXm = block.VX / ppm;
+        //    float VYm = block.VY / ppm;
+
+        //    float AreaM = block.Area / (ppm * ppm);
+
+        //    float dragX = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VXm * Math.Abs(VXm));
+        //    float dragY = (float)(0.5 * Environment.AirDensity * block.DragCoefficient * AreaM * VYm * Math.Abs(VYm));
+
+        //    float dragAccelerationXm = -Math.Sign(VXm) * (Math.Abs(dragX) / block.Mass);
+        //    float dragAccelerationYm = -Math.Sign(VYm) * (Math.Abs(dragY) / block.Mass);
+
+        //    float dragAccelerationXp = dragAccelerationXm / ppm;
+        //    float dragAccelerationYp = dragAccelerationYm / ppm;
+
+        //    float netAccelerationX = gravityX + dragAccelerationXp;
+        //    float netAccelerationY = gravityY + dragAccelerationYp;
+
+        //    block.VX += netAccelerationX * deltaTime;
+        //    block.VY += netAccelerationY * deltaTime;
+
+        //    block.Bounds = new RectangleF(
+        //        new PointF(
+        //            block.X + block.VX * deltaTime,
+        //            block.Y + block.VY * deltaTime),
+        //        block.Size);
+        //}
 
         private void MagneticGravity(Block block)
         {
@@ -89,8 +111,8 @@ namespace Dropper
 
             block.Bounds = new RectangleF(
                 new PointF(
-                    block.X + stepX, 
-                    block.Y + stepY), 
+                    block.X + stepX,
+                    block.Y + stepY),
                 block.Size);
         }
     }

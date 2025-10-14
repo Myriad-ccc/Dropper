@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -16,6 +17,7 @@ namespace Dropper
         private CustomPanel area;
         private CustomPanel toolBar;
         private CustomPanel floor;
+        private Dictionary<string, int> userBounds;
 
         private Block block;
         private Point startPoint;
@@ -31,8 +33,8 @@ namespace Dropper
             ConfigureForm();
             AddBlock();
             SetScene();
-            BlockPhysics();
             ToolBar();
+            BlockPhysics();
         }
 
         private void ConfigureForm()
@@ -207,6 +209,14 @@ namespace Dropper
 
             startPoint = new Point((int)(floor.Width / 2 - block.W / 2), (int)(floor.Top - block.H));
             block.Bounds = new RectangleF(startPoint, block.Size);
+
+            userBounds = new Dictionary<string, int>
+            {
+                ["Left"] = area.Left,
+                ["Top"] = toolBar.Bottom,
+                ["Right"] = area.Right,
+                ["Bottom"] = floor.Top
+            };
         }
 
         private void Area_Paint(object sender, PaintEventArgs e)
@@ -217,90 +227,6 @@ namespace Dropper
                 g.FillRectangle(blockBrush, block.Bounds);
             using (var borderPen = new Pen((Color)block.BorderColor, (float)block.BorderWidth))
                 g.DrawRectangle(borderPen, block.Bounds.X, block.Bounds.Y, block.Bounds.Width, block.Bounds.Height);
-        }
-
-        private void BlockPhysics()
-        {
-            DragBlock(block, area);
-            CheckGravity(block);
-        }
-
-        public void DragBlock(Block block, Control parent)
-        {
-            block.MouseDragging = false;
-            PointF cursorPos = Cursor.Position;
-
-            parent.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left && block.Bounds.Contains(ev.Location))
-                {
-                    block.MouseDragging = true;
-                    cursorPos = Cursor.Position;
-                }
-            };
-
-            parent.MouseUp += (s, ev) =>
-            {
-                block.MouseDragging = false;
-                block.VX = 0;
-                block.VY = 0;
-            };
-
-            parent.MouseMove += (s, ev) =>
-            {
-                if (block.MouseDragging)
-                {
-                    float deltaX = Cursor.Position.X - cursorPos.X;
-                    float deltaY = Cursor.Position.Y - cursorPos.Y;
-
-                    block.Bounds = new RectangleF(
-                        new PointF(
-                            block.X + deltaX,
-                            block.Y + deltaY),
-                        block.Bounds.Size);
-
-                    cursorPos = Cursor.Position;
-                    ConstrainToArea(block, parent);
-                    parent.Invalidate();
-                }
-            };
-        }
-
-        private void ConstrainToArea(Block block, Control area)
-        {
-            float cx = block.X;
-            float cy = block.Y;
-            float bw = block.BorderWidth;
-            float w = block.W;
-            float h = block.H;
-
-            if (cx < area.ClientRectangle.Left)
-                cx = area.ClientRectangle.Left;
-
-            if (cx + w + bw > area.ClientRectangle.Right)
-                cx = area.ClientRectangle.Right - w - bw;
-
-            if (cy < toolBar.Bottom)
-                cy = toolBar.Bottom;
-
-            if (cy + h > floor.Top)
-                cy = floor.Top - h;
-
-            block.Bounds = new RectangleF(new PointF(cx, cy), block.Size);
-        }
-
-        private void CheckGravity(Block block)
-        {
-            gravity.Timer.Tick += (s, ev) =>
-            {
-                if (!block.MouseDragging)
-                {
-                    gravity.Apply(block);
-                    ConstrainToArea(block, area);
-                    area.Invalidate();
-                }
-            };
-            gravity.Timer.Start();
         }
 
         private void ToolBar()
@@ -319,7 +245,46 @@ namespace Dropper
                 using (var pen = new Pen(BackColor, 1f))
                     ev.Graphics.DrawRectangle(pen, 0, 0, massOptions.Width - 1, massOptions.Height - 1);
             };
+            MassOptions(massOptions);
+            massOptions.Bounds = new Rectangle(massOptions.Location, new Size(massOptions.Controls[massOptions.Controls.Count - 1].Right, massOptions.Height));
 
+
+            var pivotOptions = new CustomPanel()
+            {
+                ForeColor = Color.Transparent,
+                BackColor = QOL.Colors.SameRGB(35),
+                Width = toolBar.Width / 2,
+                Height = toolBar.Height - massOptions.Height,
+                Location = new Point(toolBar.Left, toolBar.Top + massOptions.Height + 1)
+            };
+            toolBar.Controls.Add(pivotOptions);
+            pivotOptions.Paint += (s, ev) =>
+            {
+                using (var pen = new Pen(BackColor, 1f))
+                    ev.Graphics.DrawRectangle(pen, 0, 0, pivotOptions.Width - 1, pivotOptions.Height - 1);
+            };
+            PivotOptions(pivotOptions);
+
+            var gravityOptions = new CustomPanel()
+            {
+                ForeColor = Color.Transparent,
+                BackColor = QOL.Colors.SameRGB(35),
+                Width = toolBar.Width / 2,
+                //Height = 24,
+                Height = toolBar.Height - massOptions.Height,
+            };
+            QOL.Align.Right(gravityOptions, pivotOptions);
+            toolBar.Controls.Add(gravityOptions);
+            gravityOptions.Paint += (s, ev) =>
+            {
+                using (var pen = new Pen(BackColor, 1f))
+                    ev.Graphics.DrawRectangle(pen, 0, 0, gravityOptions.Width - 1, gravityOptions.Height - 1);
+            };
+            GravityOptions(gravityOptions);
+        }
+
+        private void MassOptions(Control massOptions)
+        {
             var massLabel = new Label()
             {
                 Tag = "ToolBarInfoLabel",
@@ -444,6 +409,26 @@ namespace Dropper
                 massDisplay.Text = block.Mass.ToString("F1");
             };
 
+            var millionMass = new Button()
+            {
+                UseCompatibleTextRendering = true,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.RoyalBlue,
+                BackColor = BackColor,
+                Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Regular),
+                Text = "M",
+                TabStop = false,
+                FlatStyle = FlatStyle.Flat,
+                Size = minusMass.Size
+            };
+            QOL.Align.Right(millionMass, oneMass, 1);
+            massOptions.Controls.Add(millionMass);
+            millionMass.MouseClick += (s, ev) =>
+            {
+                block.Mass = 10000000;
+                massDisplay.Text = block.Mass.ToString("F1");
+            };
+
             var resetMass = new Button()
             {
                 UseCompatibleTextRendering = true,
@@ -456,7 +441,7 @@ namespace Dropper
                 FlatStyle = FlatStyle.Flat,
                 Size = minusMass.Size
             };
-            QOL.Align.Right(resetMass, oneMass, 1);
+            QOL.Align.Right(resetMass, millionMass, 1);
             massOptions.Controls.Add(resetMass);
             resetMass.MouseClick += (s, ev) =>
             {
@@ -486,25 +471,9 @@ namespace Dropper
                 massDisplay.Text = block.Mass.ToString("F1");
 
             };
-            massOptions.Bounds = new Rectangle(massOptions.Location, new Size(massOptions.Controls[massOptions.Controls.Count - 1].Right, massOptions.Height));
-
-
-            var pivotOptions = new CustomPanel()
-            {
-                ForeColor = Color.Transparent,
-                BackColor = QOL.Colors.SameRGB(35),
-                Width = toolBar.Width / 2,
-                //Height = 24,
-                Height = toolBar.Height - massOptions.Height,
-                Location = new Point(toolBar.Left, toolBar.Top + massOptions.Height + 1)
-            };
-            toolBar.Controls.Add(pivotOptions);
-            pivotOptions.Paint += (s, ev) =>
-            {
-                using (var pen = new Pen(BackColor, 1f))
-                    ev.Graphics.DrawRectangle(pen, 0, 0, pivotOptions.Width - 1, pivotOptions.Height - 1);
-            };
-
+        }
+        private void PivotOptions(Control pivotOptions)
+        {
             var pivotLabel = new Label()
             {
                 Tag = "ToolBarInfoLabel",
@@ -575,7 +544,7 @@ namespace Dropper
                         Text = directions[r, c]
                     };
                     pivot.Controls.Add(cards[r, c]);
-    
+
                     if (r == 2 && c == 1)
                         cards[r, c].Toggle();
                 }
@@ -602,7 +571,7 @@ namespace Dropper
             pivotOptions.Controls.Add(randomPivot);
 
             bool randomPivotOn = false;
-            var randomPivotTimer = new Timer() { Interval = 1000};
+            var randomPivotTimer = new Timer() { Interval = 1001 };
             randomPivotTimer.Tick += (s, ev) => cards[random.Next(cards.GetLength(0)), random.Next(cards.GetLength(1))].SetActive();
 
             var copyColor = randomPivot.ForeColor;
@@ -623,28 +592,12 @@ namespace Dropper
                         randomPivot.ForeColor = copyColor;
                     }
                 }
-                if (ev.Button == MouseButtons.Right && randomPivotTimer.Interval > 100)
+                if (ev.Button == MouseButtons.Right && randomPivotTimer.Interval > 1)
                     randomPivotTimer.Interval -= 100;
             };
-
-
-
-            var gravityOptions = new CustomPanel()
-            {
-                ForeColor = Color.Transparent,
-                BackColor = QOL.Colors.SameRGB(35),
-                Width = toolBar.Width / 2,
-                //Height = 24,
-                Height = toolBar.Height - massOptions.Height,
-            };
-            QOL.Align.Right(gravityOptions, pivotOptions);
-            toolBar.Controls.Add(gravityOptions);
-            gravityOptions.Paint += (s, ev) =>
-            {
-                using (var pen = new Pen(BackColor, 1f))
-                    ev.Graphics.DrawRectangle(pen, 0, 0, gravityOptions.Width - 1, gravityOptions.Height - 1);
-            };
-
+        }
+        private void GravityOptions(Control gravityOptions)
+        {
             var gravityLabel = new Label()
             {
                 Font = new Font(QOL.VCROSDMONO, 20f),
@@ -678,6 +631,111 @@ namespace Dropper
             };
 
             gravityOptions.Controls.Add(gravityChoice);
+        }
+
+        private void BlockPhysics()
+        {
+            DragBlock(block, area);
+            CheckGravity(block);
+        }
+
+        public void DragBlock(Block block, Control parent)
+        {
+            block.MouseDragging = false;
+            PointF cursorPos = Cursor.Position;
+
+            parent.MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left && block.Bounds.Contains(ev.Location))
+                {
+                    block.MouseDragging = true;
+                    cursorPos = Cursor.Position;
+                }
+            };
+
+            parent.MouseUp += (s, ev) =>
+            {
+                block.MouseDragging = false;
+            };
+
+            parent.MouseMove += (s, ev) =>
+            {
+                if (block.MouseDragging)
+                {
+                    float deltaX = Cursor.Position.X - cursorPos.X;
+                    float deltaY = Cursor.Position.Y - cursorPos.Y;
+
+                    block.Bounds = new RectangleF(
+                        new PointF(
+                            block.X + deltaX,
+                            block.Y + deltaY),
+                        block.Bounds.Size);
+
+                    cursorPos = Cursor.Position;
+                    ConstrainToArea(block, parent);
+                    parent.Invalidate();
+                }
+            };
+        }
+
+        private void ConstrainToArea(Block block, Control area)
+        {
+            float cx = block.X;
+            float cy = block.Y;
+            float bw = block.BorderWidth;
+            float w = block.W;
+            float h = block.H;
+
+            if (cx < area.ClientRectangle.Left)
+                cx = area.ClientRectangle.Left;
+
+            if (cx + w + bw > area.ClientRectangle.Right)
+                cx = area.ClientRectangle.Right - w - bw;
+
+            if (cy < toolBar.Bottom)
+                cy = toolBar.Bottom;
+
+            if (cy + h > floor.Top)
+                cy = floor.Top - h;
+
+            block.Bounds = new RectangleF(new PointF(cx, cy), block.Size);
+        }
+
+        private void CheckGravity(Block block)
+        {
+            gravity.Timer.Tick += (s, ev) =>
+            {
+                if (block.Gravity == Block.GravityMode.Dynamic)
+                {
+                    for (int r = 0; r < Card.deck.GetLength(0); r++)
+                    {
+                        for (int c = 0; c < Card.deck.GetLength(1); c++)
+                        {
+                            if (Card.deck[0, c].On)
+                                if (block.Left == userBounds["Left"])
+                                    block.ResetVX(block);
+                            if (Card.deck[2, c].On)
+                                if (block.Right == userBounds["Left"])
+                                    block.ResetVX(block);
+
+                            if (Card.deck[r, 0].On)
+                                if (block.Top == userBounds["Top"])
+                                    block.ResetVY(block);
+                            if (Card.deck[r, 2].On)
+                                if (block.Bottom == userBounds["Bottom"])
+                                    block.ResetVY(block);
+                        }
+                    }
+                }
+
+                if (!block.MouseDragging)
+                {
+                    gravity.Apply(block);
+                    ConstrainToArea(block, area);
+                    area.Invalidate();
+                }
+            };
+            gravity.Timer.Start();
         }
     }
 }

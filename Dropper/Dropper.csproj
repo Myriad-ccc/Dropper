@@ -60,7 +60,6 @@
     <Compile Include="Dropper.Designer.cs">
       <DependentUpon>Dropper.cs</DependentUpon>
     </Compile>
-    <Compile Include="Enviorment.cs" />
     <Compile Include="Gravity.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

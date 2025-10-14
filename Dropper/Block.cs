@@ -16,23 +16,19 @@ namespace Dropper
         public float BorderWidth { get; set; }
         public PointF MagneticCore { get; set; }
 
+        public float VX { get; set; } = 0f;
+        public float VY { get; set; } = 0f;
+
+        public float Area => Size.Width * Size.Height;
+
         public float X => Bounds.X;
         public float Y => Bounds.Y;
         public float W => Size.Width;
         public float H => Size.Height;
-        public float L => Bounds.Left;
-        public float R => Bounds.Right;
-        public float T => Bounds.Top;
-        public float B => Bounds.Bottom;
-
-        public float VX { get; set; } = 0f;
-        public float VY { get; set; } = 0f;
-
-        public float Weight => Mass * Environment.g;
-        public float Area => W * H;
-        public float DragCoefficient = 1.05f;       //https://en.wikipedia.org/wiki/Drag_coefficient
-        public float DragX { get; set; }            //https://en.wikipedia.org/wiki/Drag_equation
-        public float DragY { get; set; }            //https://en.wikipedia.org/wiki/Drag_equation
+        public float Left => Bounds.Left;
+        public float Right => Bounds.Right;
+        public float Top => Bounds.Top;
+        public float Bottom => Bounds.Bottom;
 
         public Block(RectangleF bounds, float mass, Color? color = null, Color? borderColor = null)
         {
@@ -44,8 +40,12 @@ namespace Dropper
         public enum GravityMode { Linear, Dynamic, Magnetic }
         public GravityMode Gravity { get; set; } = GravityMode.Linear;
 
-        public void CalculateDrag()
+        public void ResetVelocity(Block block)
         {
+            ResetVX(block);
+            ResetVY(block);
         }
+        public void ResetVX(Block block) => block.VX = 0;
+        public void ResetVY(Block block) => block.VY = 0;
     }
 }
