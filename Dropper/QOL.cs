@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -19,6 +20,13 @@ namespace Dropper
                 if (ev.Button == MouseButtons.Right)
                     WriteOut(getter());
             };
+        }
+
+        public static void ClampControlWidth(Control control)
+        {
+            if (control.Controls.Count == 0) return;
+            int rightMost = control.Controls.Cast<Control>().Max(x => x.Right);
+            control.Bounds = new Rectangle(control.Location, new Size(rightMost, control.Height));
         }
 
         public static class Colors

@@ -19,6 +19,8 @@ namespace Dropper
         public float VX { get; set; } = 0f;
         public float VY { get; set; } = 0f;
 
+        public bool Bounce { get; set; } = false;
+
         public float Area => Size.Width * Size.Height;
         public float PeakAltitude { get; set; } = 0f;
         public float MinAltitude { get; set; }
@@ -32,10 +34,10 @@ namespace Dropper
         public float Top => Bounds.Top;
         public float Bottom => Bounds.Bottom;
 
-        public Block(RectangleF bounds, float weight, Color? color = null, Color? borderColor = null)
+        public Block(RectangleF? bounds = null, Color? color = null, Color? borderColor = null)
         {
-            Bounds = bounds;
-            Weight = weight;
+            Bounds = bounds ?? RectangleF.Empty;
+            //Weight = weight;
             Color = color ?? QOL.RandomColor();
             BorderColor = borderColor ?? QOL.RandomColor();
         }

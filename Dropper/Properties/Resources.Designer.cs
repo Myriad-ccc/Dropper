@@ -61,12 +61,12 @@ namespace Dropper.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static System.Drawing.Bitmap myscale {
+        internal static byte[] Font_VCR_OSD_MONO {
             get {
-                object obj = ResourceManager.GetObject("myscale", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
+                object obj = ResourceManager.GetObject("Font_VCR_OSD_MONO", resourceCulture);
+                return ((byte[])(obj));
             }
         }
     }

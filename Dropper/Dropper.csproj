@@ -61,9 +61,21 @@
       <DependentUpon>Dropper.cs</DependentUpon>
     </Compile>
     <Compile Include="Gravity.cs" />
+    <Compile Include="GravityPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="PivotPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QOL.cs" />
+    <Compile Include="ToolbarPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="WeightPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <EmbeddedResource Include="Dropper.resx">
       <DependentUpon>Dropper.cs</DependentUpon>
     </EmbeddedResource>

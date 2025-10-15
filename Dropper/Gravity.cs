@@ -24,11 +24,6 @@ namespace Dropper
                 case Block.GravityMode.Magnetic:
                     MagneticGravity(block);
                     break;
-                //case Block.GravityMode.LinearBounce:
-                //    block.PeakAltitude = block.Y;
-                //    block.MinAltitude = block.PeakAltitude;
-                //    Bounce(block);
-                //    break;
             }
         }
 
@@ -78,30 +73,5 @@ namespace Dropper
                     block.Y + stepY),
                 block.Size);
         }
-
-        //private void Bounce(Block block)
-        //{
-        //    bool canBounce = true;
-        //    if (block.MouseDragging)
-        //        canBounce = false;
-
-        //    if (block.Y > block.PeakAltitude)
-        //        block.PeakAltitude = block.Y;
-        //    if (block.MinAltitude < block.Y)
-        //        block.MinAltitude = block.Y;
-        //    else
-        //    {
-        //        if (canBounce)
-        //        {
-        //            block.Bounds = new RectangleF(
-        //                new PointF(
-        //                    block.X + block.PeakAltitude * 0.5f * X,
-        //                    block.Y + block.PeakAltitude * 0.5f * Y),
-        //                block.Size);
-        //        }
-        //        else
-        //            LinearGravity(block);
-        //    }
-        //}
     }
 }
