@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -14,13 +13,13 @@ namespace Dropper
         private static Color TitleColor = QOL.RandomColor();
         private static Color ShadowTitleColor = QOL.RandomColor();
 
+        private Block block = new Block();
+
         private CustomPanel area;
         private ToolbarPanel toolBar;
         private CustomPanel floor;
         private Point startPoint;
         private Dictionary<string, int> userBounds;
-
-        private Block block;
 
         private readonly Gravity gravity = new Gravity();
 
@@ -29,7 +28,6 @@ namespace Dropper
         private void Form1_Load(object sender, EventArgs e)
         {
             ConfigureForm();
-            block = new Block();
             SetScene();
             BlockPhysics();
         }
@@ -165,11 +163,7 @@ namespace Dropper
                 (int)(area.Width / 2 - block.W / 2),
                 (int)(area.Height / 2 - block.H / 2));
 
-            toolBar = new ToolbarPanel(block, gravity)
-            {
-                Location = new Point(),
-                Size = new Size(area.Width, 96),
-            };
+            toolBar = new ToolbarPanel(block, gravity);
             toolBar.Paint += (s, ev) =>
             {
                 var g = ev.Graphics;

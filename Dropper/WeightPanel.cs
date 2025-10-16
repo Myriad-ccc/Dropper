@@ -9,20 +9,31 @@ namespace Dropper
     {
         public ClickFilter WeightDisplayFilter;
         private readonly Block Block;
-        private readonly Gravity Gravity;
 
-        public WeightPanel(Block block, Gravity gravity)
+        public TextBox weightDisplay;
+        public float originalWeight;
+
+        public Button collapsableMenu;
+        public event EventHandler CollapseExpandedWeightPanel;
+
+        public WeightPanel(Block block)
         {
             Block = block;
-            Gravity = gravity;
+            originalWeight = block.Weight;
             BuildWeightPanel();
+        }
+
+        public void UpdateWeightDisplay()
+        {
+            if (weightDisplay != null)
+                weightDisplay.Text = $"{Block.Weight:F1}";
         }
 
         private void BuildWeightPanel()
         {
             ForeColor = Color.Transparent;
             BackColor = QOL.Colors.SameRGB(35);
-            Width = 1024;
+            Width = 264;
             Height = 24;
             Paint += (s, ev) =>
             {
@@ -34,25 +45,24 @@ namespace Dropper
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
                 ForeColor = Color.White,
-                Font = new Font(QOL.VCROSDMONO, 16f),
+                Font = new Font(QOL.VCROSDMONO, 18f),
                 Text = "Weight",
                 Height = Height,
             };
             Controls.Add(weightLabel);
 
-            float originalWeight = Block.Weight;
-            var weightDisplay = new TextBox()
+            weightDisplay = new TextBox()
             {
                 Anchor = AnchorStyles.Left,
                 BackColor = QOL.Colors.SameRGB(100),
                 ForeColor = Color.White,
-                Font = new Font(QOL.VCROSDMONO, 16f),
+                Font = new Font(QOL.VCROSDMONO, 17f),
                 Text = $"{Block.Weight:F1}",
                 Width = weightLabel.Width,
                 BorderStyle = BorderStyle.None,
                 TabStop = false,
             };
-            QOL.Align.Right(weightDisplay, weightLabel, 6);
+            QOL.Align.Right(weightDisplay, weightLabel);
             weightDisplay.TextChanged += (s, ev) =>
             {
                 if (float.TryParse(weightDisplay.Text, out float newWeight))
@@ -72,142 +82,19 @@ namespace Dropper
             WeightDisplayFilter = new ClickFilter(weightDisplay);
             Application.AddMessageFilter(WeightDisplayFilter);
 
-            var minusWeight = new Button()
-            {
-                UseCompatibleTextRendering = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.FromArgb(255, 163, 42, 42),
-                Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Regular),
-                Text = "-",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(24, 24)
-            };
-            QOL.Align.Right(minusWeight, weightDisplay, 4);
-            Controls.Add(minusWeight);
-            minusWeight.MouseClick += (s, ev) =>
-            {
-                Block.Weight = Block.Weight - 5 > int.MinValue ? Block.Weight - 5 : Block.Weight;
-                weightDisplay.Text = Block.Weight.ToString("F1");
-            };
-
-            var plusWeight = new Button()
-            {
-                UseCompatibleTextRendering = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.Green,
-                Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Regular),
-                Text = "+",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
-            };
-            QOL.Align.Right(plusWeight, minusWeight, 1);
-            Controls.Add(plusWeight);
-            plusWeight.MouseClick += (s, ev) =>
-            {
-                Block.Weight = Block.Weight + 5 < int.MaxValue ? Block.Weight + 5 : Block.Weight;
-                weightDisplay.Text = Block.Weight.ToString("F1");
-            };
-
-            var zeroWeight = new Button()
-            {
-                TextAlign = ContentAlignment.TopCenter,
-                ForeColor = Color.Gray,
-                Font = new Font(QOL.VCROSDMONO, 13f, FontStyle.Regular),
-                Text = "0",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
-            };
-            QOL.Align.Right(zeroWeight, plusWeight, 1);
-            Controls.Add(zeroWeight);
-            zeroWeight.MouseClick += (s, ev) =>
-            {
-                Block.Weight = 0;
-                weightDisplay.Text = Block.Weight.ToString("F1");
-            };
-
-            var oneWeight = new Button()
-            {
-                UseCompatibleTextRendering = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.Gray,
-                Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Regular),
-                Text = "1",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
-            };
-            QOL.Align.Right(oneWeight, zeroWeight, 1);
-            Controls.Add(oneWeight);
-            oneWeight.MouseClick += (s, ev) =>
-            {
-                Block.Weight = 1;
-                weightDisplay.Text = Block.Weight.ToString("F1");
-            };
-
-            var millionWeight = new Button()
-            {
-                UseCompatibleTextRendering = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.RoyalBlue,
-                Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Regular),
-                Text = "M",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
-            };
-            QOL.Align.Right(millionWeight, oneWeight, 1);
-            Controls.Add(millionWeight);
-            millionWeight.MouseClick += (s, ev) =>
-            {
-                Block.Weight = 10000000;
-                weightDisplay.Text = Block.Weight.ToString("F1");
-            };
-
-            var resetWeight = new Button()
-            {
-                UseCompatibleTextRendering = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.Gray,
-                Font = new Font(QOL.VCROSDMONO, 18f, FontStyle.Regular),
-                Text = "↻",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = minusWeight.Size
-            };
-            QOL.Align.Right(resetWeight, millionWeight, 1);
+            var resetWeight = QOL.GenericControls.Button(18f, "↻", Color.White);
+            QOL.Align.Right(resetWeight, weightDisplay, 15);
             Controls.Add(resetWeight);
             resetWeight.MouseClick += (s, ev) =>
             {
                 Block.Weight = originalWeight;
-                weightDisplay.Text = Block.Weight.ToString("F1");
+                weightDisplay.Text = $"{Block.Weight:F1}";
             };
 
-            var absoluteWeight = new Button()
-            {
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.LightGoldenrodYellow,
-                Font = new Font(QOL.VCROSDMONO, 12f, FontStyle.Regular),
-                Text = "Abs",
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(48, 24)
-            };
-            QOL.Align.Right(absoluteWeight, resetWeight, 1);
-            Controls.Add(absoluteWeight);
-            absoluteWeight.MouseClick += (s, ev) =>
-            {
-                if (Math.Abs(Block.Weight) > int.MinValue && Math.Abs(Block.Weight) < int.MaxValue)
-                    Block.Weight = Math.Abs(Block.Weight);
-                else
-                    Block.Weight = originalWeight;
-                weightDisplay.Text = Block.Weight.ToString("F1");
-            };
-
-            foreach (var button in Controls.OfType<Button>())
-                button.BackColor = QOL.Colors.SameRGB(20);
+            collapsableMenu = QOL.GenericControls.Button(12f, "+", Color.White);
+            QOL.Align.Right(collapsableMenu, resetWeight, 1);
+            Controls.Add(collapsableMenu);
+            collapsableMenu.MouseClick += (s, ev) => CollapseExpandedWeightPanel?.Invoke(this, EventArgs.Empty);
         }
     }
 }

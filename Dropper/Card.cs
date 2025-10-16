@@ -7,6 +7,9 @@ namespace Dropper
     public class Card : Button
     {
         public bool On { get; set; } = false;
+        public static int CardWidth { get; set; } = 32;
+        public static int CardHeight { get; set; } = 32;
+
         public static Card[,] deck;
         public int DeckRow { get; set; }
         public int DeckCol { get; set; }
@@ -20,11 +23,11 @@ namespace Dropper
 
             BackColor = defaultBG;
             FlatStyle = FlatStyle.Popup;
-            Size = new Size(24, 24);
+            Size = new Size(CardWidth, CardHeight);
             TabStop = false;
             UseCompatibleTextRendering = true;
             TextAlign = ContentAlignment.TopCenter;
-            Font = new Font(QOL.VCROSDMONO, 12f);
+            Font = new Font(QOL.VCROSDMONO, CardWidth / 2);
 
             MouseClick += (s, ev) => SetActive();
         }

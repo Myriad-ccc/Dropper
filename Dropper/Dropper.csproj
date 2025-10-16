@@ -60,6 +60,9 @@
     <Compile Include="Dropper.Designer.cs">
       <DependentUpon>Dropper.cs</DependentUpon>
     </Compile>
+    <Compile Include="ExpandedWeightMenu.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Gravity.cs" />
     <Compile Include="GravityPanel.cs">
       <SubType>Component</SubType>

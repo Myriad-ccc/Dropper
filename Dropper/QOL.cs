@@ -22,15 +22,20 @@ namespace Dropper
             };
         }
 
-        public static void ClampControlWidth(Control control)
+        public static void ClampControlWidth(Control control, int? gap = null)
         {
             if (control.Controls.Count == 0) return;
             int rightMost = control.Controls.Cast<Control>().Max(x => x.Right);
-            control.Bounds = new Rectangle(control.Location, new Size(rightMost, control.Height));
+            control.Bounds = new Rectangle(control.Location, new Size(rightMost + (gap ?? 0), control.Height));
         }
+
+        public static bool ValidInt32(int num) => num > int.MinValue && num < int.MaxValue;
+        public static bool ValidFloat32(float num) => num > float.MinValue && num < float.MaxValue;
+        public static bool ValidDouble64(float num) => num > double.MinValue && num < double.MaxValue;
 
         public static class Colors
         {
+            public static Color RandomColor() => Color.FromArgb(255, random.Next(256), random.Next(256), random.Next(256));
             public static Color SameRGB(int value) => Color.FromArgb(255, value, value, value);
             public static Color SameRG(int value) => Color.FromArgb(255, value, value, random.Next(256));
             public static Color SameRB(int value) => Color.FromArgb(255, value, random.Next(256), value);
@@ -113,6 +118,24 @@ namespace Dropper
                     thisControl.Location = new Point(
                         otherControl.Location.X + otherControl.Width,
                         otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+            }
+        }
+        public static class GenericControls
+        {
+            public static Button Button(float? fontSize = null, string text = null, Color? forecolor = null, Size? size = null)
+            {
+                return new Button()
+                {
+                    UseCompatibleTextRendering = true,
+                    TabStop = false,
+                    FlatStyle = FlatStyle.Flat,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    BackColor = Colors.SameRGB(20),
+                    Size = size ?? new Size(24, 24),
+                    Font = new Font(VCROSDMONO, fontSize ?? 20f, FontStyle.Regular),
+                    ForeColor = forecolor ?? Color.White,
+                    Text = text ?? string.Empty,
+                };
             }
         }
     }

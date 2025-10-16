@@ -21,23 +21,15 @@ namespace Dropper
 
         private void BuildGravityPanel()
         {
-            ForeColor = Color.Transparent;
-            BackColor = QOL.Colors.SameRGB(35);
+            ForeColor = Color.White;
+            BackColor = Color.Transparent;
             Width = 1024;
-            Height = 72;
+            Height = 100;
             Paint += (s, ev) =>
             {
                 using (var pen = new Pen(BackColor, 1f))
                     ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
             };
-
-            var gravityLabel = new Label()
-            {
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                Text = "Gravity",
-                AutoSize = true,
-            };
-            Controls.Add(gravityLabel);
 
             var gravityModes = Enum.GetValues(typeof(Block.GravityMode)).Cast<object>().ToArray();
 
@@ -47,12 +39,11 @@ namespace Dropper
             {
                 UseCompatibleTextRendering = true,
                 TabStop = false,
-                Font = new Font(QOL.VCROSDMONO, 10f),
+                Font = new Font(QOL.VCROSDMONO, 20f),
                 FlatStyle = FlatStyle.Flat,
                 Text = gravityModes[gravityModeIndex].ToString(),
                 AutoSize = true,
             };
-            QOL.Align.Bottom.Center(gravityChoice, gravityLabel, 1);
             gravityChoice.MouseClick += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -70,15 +61,15 @@ namespace Dropper
             displayVX = new Label()
             {
                 ForeColor = Color.White,
-                Font = new Font(QOL.VCROSDMONO, 14f)
+                Font = new Font(QOL.VCROSDMONO, 16f)
             };
-            QOL.Align.Right(displayVX, gravityLabel, 1);
+            QOL.Align.Bottom.Center(displayVX, gravityChoice, 1);
             Controls.Add(displayVX);
 
             displayVY = new Label()
             {
                 ForeColor = Color.White,
-                Font = new Font(QOL.VCROSDMONO, 14f),
+                Font = new Font(QOL.VCROSDMONO, 16f),
                 AutoSize = true,
             };
             QOL.Align.Bottom.Center(displayVY, displayVX, 1);
