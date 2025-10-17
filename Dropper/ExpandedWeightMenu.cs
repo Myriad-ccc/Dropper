@@ -28,33 +28,6 @@ namespace Dropper
             Visible = false;
             BackColor = Color.Transparent;
 
-            //var minusWeight = QOL.GenericControls.Button(null, "-", Color.FromArgb(255, 163, 42, 42));
-            //minusWeight.Location = new Point(2, 2);
-            //minusWeight.MouseClick += (s, ev) =>
-            //{
-            //    Block.Weight = Block.Weight - 5 > int.MinValue ? Block.Weight - 5 : Block.Weight;
-            //    WeightChanged?.Invoke(Block.Weight);
-            //};
-            //Controls.Add(minusWeight);
-
-            //var plusWeight = QOL.GenericControls.Button(null, "+", Color.Green);
-            //QOL.Align.Right(plusWeight, minusWeight, 1);
-            //Controls.Add(plusWeight);
-            //plusWeight.MouseClick += (s, ev) =>
-            //{
-            //    Block.Weight = Block.Weight + 5 < int.MaxValue ? Block.Weight + 5 : Block.Weight;
-            //    WeightChanged?.Invoke(Block.Weight);
-            //};
-
-            //var zeroWeight = QOL.GenericControls.Button(13f, "0", QOL.RandomColor());
-            //QOL.Align.Right(zeroWeight, plusWeight, 1);
-            //Controls.Add(zeroWeight);
-            //zeroWeight.MouseClick += (s, ev) =>
-            //{
-            //    Block.Weight = 0;
-            //    WeightChanged?.Invoke(Block.Weight);
-            //};
-
             //var oneWeight = QOL.GenericControls.Button(null, "1", QOL.RandomColor());
             //QOL.Align.Right(oneWeight, zeroWeight, 1);
             //Controls.Add(oneWeight);
@@ -90,12 +63,119 @@ namespace Dropper
             {
                 for (int c = 0; c < buttons.GetLength(1); c++)
                 {
-                    int row = r;
-                    int col = c;
+                    int x = r;
+                    int y = c;
+                    var b = buttons[x, y];
 
-                    buttons[row, col] = QOL.GenericControls.Button(null, "-", Color.Gray);
-                    buttons[row, col].Location = new Point(row * 24, col * 24);
-                    Controls.Add(buttons[row, col]);
+                    b = QOL.GenericControls.Button(null, "-", Color.Gray);
+                    b.Location = new Point(x * 24, y * 24);
+
+                    switch (y)
+                    {
+                        case 0:
+                            switch (x)
+                            {
+                                case 0:
+                                    b.Name = "minus5Weight";
+                                    b.Text = "-";
+                                    b.ForeColor = Color.FromArgb(255, 163, 42, 42);
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = Block.Weight - 5 > int.MinValue ? Block.Weight - 5 : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 1:
+                                    b.Name = "plus5Weight";
+                                    b.Text = "+";
+                                    b.ForeColor = Color.FromArgb(255, 53, 206, 84);
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = Block.Weight + 5 < int.MaxValue ? Block.Weight + 5 : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 2:
+                                    b.Name = "zeroWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 13f);
+                                    b.Text = "0";
+                                    b.ForeColor = Color.Moccasin;
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = 0;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 3:
+                                    
+                                    break;
+                                case 4:
+
+                                    break;
+                                case 5:
+                                    
+                                    break;
+                                case 6:
+
+                                    break;
+                                case 7:
+
+                                    break;
+                            }
+                            break;
+                        case 1:
+                            switch (x)
+                            {
+                                case 0:
+                                    b.Name = "minus50Weight";
+                                    b.Text = "-";
+                                    b.ForeColor = Color.FromArgb(255, 127, 33, 33);
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = Block.Weight - 50 > int.MinValue ? Block.Weight - 50 : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 1:
+                                    b.Name = "plus50Weight";
+                                    b.Text = "+";
+                                    b.ForeColor = Color.FromArgb(255, 47, 181, 73);
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = Block.Weight + 50 < int.MaxValue ? Block.Weight + 50 : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                            }
+                            break;
+                        case 2:
+                            switch (x)
+                            {
+                                case 0:
+                                    b.Name = "minus500Weight";
+                                    b.Text = "-";
+                                    b.ForeColor = Color.FromArgb(255, 94, 24, 24);
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = Block.Weight - 500 > int.MinValue ? Block.Weight - 500 : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 1:
+                                    b.Name = "plus500Weight";
+                                    b.Text = "+";
+                                    b.ForeColor = Color.FromArgb(255, 42, 163, 68);
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = Block.Weight + 500 < int.MaxValue ? Block.Weight + 500 : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                            }
+                            break;
+                    }
+
+                    Controls.Add(b);
                 }
             }
         }
