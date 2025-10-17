@@ -106,7 +106,7 @@ namespace Dropper
             DragControl(borderBox, true);
         }
 
-        public static void DragControl(Control control, bool parent)
+        public void DragControl(Control control, bool parent)
         {
             var target = parent ? control.Parent : control;
 

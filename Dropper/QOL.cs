@@ -30,8 +30,14 @@ namespace Dropper
         }
 
         public static bool ValidInt32(int num) => num > int.MinValue && num < int.MaxValue;
-        public static bool ValidFloat32(float num) => num > float.MinValue && num < float.MaxValue;
+        public static bool ValidFloat32(float num) => !float.IsNaN(num) && !float.IsInfinity(num);
         public static bool ValidDouble64(float num) => num > double.MinValue && num < double.MaxValue;
+
+        public static int Factorial(int num)
+        {
+            if (num == 0 || num == 1) return 1;
+            return num *= Factorial(num - 1);
+        }
 
         public static class Colors
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -6,6 +7,7 @@ namespace Dropper
 {
     public class ExpandedWeightMenu : CustomPanel
     {
+        private readonly Random random = new Random();
         private readonly Block Block;
 
         public event Action<float> WeightChanged;
@@ -25,38 +27,8 @@ namespace Dropper
 
         private void BuildExpandedWeightMenu()
         {
-            Visible = false;
+            Visible = true;
             BackColor = Color.Transparent;
-
-            //var oneWeight = QOL.GenericControls.Button(null, "1", QOL.RandomColor());
-            //QOL.Align.Right(oneWeight, zeroWeight, 1);
-            //Controls.Add(oneWeight);
-            //oneWeight.MouseClick += (s, ev) =>
-            //{
-            //    Block.Weight = 1;
-            //    WeightChanged?.Invoke(Block.Weight);
-            //};
-
-            //var millionWeight = QOL.GenericControls.Button(null, "M", QOL.RandomColor());
-            //QOL.Align.Right(millionWeight, oneWeight, 1);
-            //Controls.Add(millionWeight);
-            //millionWeight.MouseClick += (s, ev) =>
-            //{
-            //    Block.Weight = 10000000;
-            //    WeightChanged?.Invoke(Block.Weight);
-            //};
-
-            //var absoluteWeight = QOL.GenericControls.Button(12f, "Abs", QOL.RandomColor());
-            //QOL.Align.Right(absoluteWeight, millionWeight, 1);
-            //Controls.Add(absoluteWeight);
-            //absoluteWeight.MouseClick += (s, ev) =>
-            //{
-            //    if (QOL.ValidFloat32(Math.Abs(Block.Weight)))
-            //        Block.Weight = Math.Abs(Block.Weight);    
-            //    else
-            //        ResetWeight?.Invoke();
-            //    WeightChanged?.Invoke(Block.Weight);
-            //};
 
             Button[,] buttons = new Button[11, 3];
             for (int r = 0; r < buttons.GetLength(0); r++)
@@ -65,9 +37,7 @@ namespace Dropper
                 {
                     int x = r;
                     int y = c;
-                    var b = buttons[x, y];
-
-                    b = QOL.GenericControls.Button(null, "-", Color.Gray);
+                    var b = QOL.GenericControls.Button(null, "-", Color.Gray);
                     b.Location = new Point(x * 24, y * 24);
 
                     switch (y)
@@ -76,49 +46,99 @@ namespace Dropper
                             switch (x)
                             {
                                 case 0:
-                                    b.Name = "minus5Weight";
-                                    b.Text = "-";
-                                    b.ForeColor = Color.FromArgb(255, 163, 42, 42);
+                                    b.Name = "squareWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.Crimson;
+                                    b.Text = "2";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight - 5 > int.MinValue ? Block.Weight - 5 : Block.Weight;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        if (Math.Abs(Block.Weight) <= Math.Sqrt(float.MaxValue))
+                                        {
+                                            Block.Weight = (float)Math.Pow(Block.Weight, 2);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
                                     };
                                     break;
                                 case 1:
-                                    b.Name = "plus5Weight";
-                                    b.Text = "+";
-                                    b.ForeColor = Color.FromArgb(255, 53, 206, 84);
+                                    b.Name = "cubeWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.Salmon;
+                                    b.Text = "3";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight + 5 < int.MaxValue ? Block.Weight + 5 : Block.Weight;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        if (Math.Abs(Block.Weight) <= Math.Pow(float.MaxValue, 1.0f / 3.0f))
+                                        {
+                                            Block.Weight = (float)Math.Pow(Block.Weight, 3);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
                                     };
                                     break;
                                 case 2:
-                                    b.Name = "zeroWeight";
-                                    b.Font = new Font(b.Font.FontFamily, 13f);
-                                    b.Text = "0";
-                                    b.ForeColor = Color.Moccasin;
+                                    b.Name = "flipWeight";
+                                    b.ForeColor = Color.Tomato;
+                                    b.Text = "||";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = 0;
+                                        Block.Weight = Block.Weight * Math.Sign(-1);
                                         WeightChanged?.Invoke(Block.Weight);
                                     };
                                     break;
                                 case 3:
-                                    
+                                    b.Name = "factorializeWeight";
+                                    b.ForeColor = Color.PaleVioletRed;
+                                    b.Text = "!";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (Block.Weight == (int)Block.Weight && Block.Weight >= 0 && Block.Weight <= 16)
+                                        {
+                                            Block.Weight = QOL.Factorial((int)Block.Weight);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
+                                    };
                                     break;
                                 case 4:
-
+                                    b.Name = "clockIncrementingWeight";
+                                    b.UseCompatibleTextRendering = true;
+                                    b.Font = new Font(b.Font.FontFamily, 14f);
+                                    b.ForeColor = Color.Beige;
+                                    b.Text = "⏱️";
+                                    bool on = false;
+                                    var timer = new Timer() { Interval = 1000 };
+                                    timer.Tick += (s, ev) =>
+                                    {
+                                        Block.Weight = DateTime.Now.Second;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        on = !on;
+                                        if (on)
+                                        {
+                                            b.ForeColor = Color.OrangeRed;
+                                            timer.Start();
+                                        }
+                                        else
+                                        {
+                                            b.ForeColor = Color.Beige;
+                                            timer.Stop();
+                                        }
+                                    };
                                     break;
                                 case 5:
-                                    
+
                                     break;
                                 case 6:
 
                                     break;
                                 case 7:
+
+                                    break;
+                                case 8:
+
+                                    break;
+                                case 9:
+
+                                case 10:
 
                                     break;
                             }
@@ -127,24 +147,120 @@ namespace Dropper
                             switch (x)
                             {
                                 case 0:
-                                    b.Name = "minus50Weight";
-                                    b.Text = "-";
-                                    b.ForeColor = Color.FromArgb(255, 127, 33, 33);
+                                    b.Name = "squareRootWeight";
+                                    b.ForeColor = Color.DarkSlateBlue;
+                                    b.Text = "√";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight - 50 > int.MinValue ? Block.Weight - 50 : Block.Weight;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        if (Block.Weight > 0)
+                                        {
+                                            Block.Weight = (float)Math.Sqrt(Block.Weight);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
                                     };
                                     break;
                                 case 1:
-                                    b.Name = "plus50Weight";
-                                    b.Text = "+";
-                                    b.ForeColor = Color.FromArgb(255, 47, 181, 73);
+                                    b.Name = "cubeRootWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.Silver;
+                                    b.Text = "∛";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight + 50 < int.MaxValue ? Block.Weight + 50 : Block.Weight;
+                                        if (Block.Weight > 0)
+                                        {
+                                            Block.Weight = (float)Math.Pow(Block.Weight, 1.0f / 3.0f);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 2:
+                                    b.Name = "piWeight";
+                                    b.ForeColor = Color.CadetBlue;
+                                    b.Text = "π";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = (float)Math.PI;
                                         WeightChanged?.Invoke(Block.Weight);
                                     };
+                                    break;
+                                case 3:
+                                    b.Name = "reciprocateWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.BlueViolet;
+                                    b.Text = "/";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = 1 / Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 4:
+                                    b.Name = "accumulateWeight";
+                                    b.ForeColor = Color.Gold;
+                                    b.Text = "⌖";
+
+                                    bool on = false;
+                                    var stopwatch = new Stopwatch();
+                                    float lastElapsed = 0;
+                                    var timer = new Timer() { Interval = 10 };
+                                    timer.Tick += (s, ev) =>
+                                    {
+                                        if (Block.MouseDragging)
+                                        {
+                                            if (!stopwatch.IsRunning)
+                                                stopwatch.Start();
+                                            else
+                                            {
+                                                float elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000.0f;
+                                                float deltaSeconds = elapsedSeconds - lastElapsed;
+                                                int multiplier = (int)Math.Pow(1.1f, elapsedSeconds);
+                                                Block.Weight += (float)(deltaSeconds * multiplier * 5);
+                                                WeightChanged?.Invoke(Block.Weight);
+                                                lastElapsed = elapsedSeconds;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (stopwatch.IsRunning)
+                                                stopwatch.Stop();
+                                        }
+                                            
+                                    };
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        on = !on;
+                                        if (on)
+                                        {
+                                            timer.Start();
+                                            b.ForeColor = Color.MediumVioletRed;
+                                            stopwatch.Reset();
+                                            lastElapsed = 0;
+                                        }
+                                        else
+                                        {
+                                            timer.Stop();
+                                            b.ForeColor = Color.Gold;
+                                            stopwatch.Stop();
+                                        }
+                                    };
+                                    break;
+                                case 5:
+
+                                    break;
+                                case 6:
+
+                                    break;
+                                case 7:
+
+                                    break;
+                                case 8:
+
+                                    break;
+                                case 9:
+
+                                    break;
+                                case 10:
+
                                     break;
                             }
                             break;
@@ -152,24 +268,79 @@ namespace Dropper
                             switch (x)
                             {
                                 case 0:
-                                    b.Name = "minus500Weight";
-                                    b.Text = "-";
-                                    b.ForeColor = Color.FromArgb(255, 94, 24, 24);
+                                    b.Name = "logWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 8f);
+                                    b.ForeColor = Color.DeepPink;
+                                    b.Text = "ln";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight - 500 > int.MinValue ? Block.Weight - 500 : Block.Weight;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        if (Block.Weight > 0)
+                                        {
+                                            Block.Weight = (float)Math.Log(Block.Weight);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
                                     };
                                     break;
                                 case 1:
-                                    b.Name = "plus500Weight";
-                                    b.Text = "+";
-                                    b.ForeColor = Color.FromArgb(255, 42, 163, 68);
+                                    b.Name = "naturalLogWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 8f);
+                                    b.ForeColor = Color.DarkTurquoise;
+                                    b.Text = "log";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight + 500 < int.MaxValue ? Block.Weight + 500 : Block.Weight;
+                                        if (Block.Weight > 0)
+                                        {
+                                            Block.Weight = (float)Math.Log10(Block.Weight);
+                                            WeightChanged?.Invoke(Block.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 2:
+                                    b.Name = "eulerWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.LightYellow;
+                                    b.Text = "e";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        Block.Weight = (float)Math.E;
                                         WeightChanged?.Invoke(Block.Weight);
                                     };
+                                    break;
+                                case 3:
+                                    b.Name = "sumDigitsOfWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.ForestGreen;
+                                    b.Text = "Σ";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        string blockWeight = Math.Abs(Block.Weight).ToString();
+                                        float sum = 0f;
+                                        foreach (var ch in blockWeight)
+                                            sum += (float)char.GetNumericValue(ch);
+                                        Block.Weight = QOL.ValidFloat32(sum) ? sum : Block.Weight;
+                                        WeightChanged?.Invoke(Block.Weight);
+                                    };
+                                    break;
+                                case 4:
+
+                                    break;
+                                case 5:
+
+                                    break;
+                                case 6:
+
+                                    break;
+                                case 7:
+
+                                    break;
+                                case 8:
+
+                                    break;
+                                case 9:
+
+                                    break;
+                                case 10:
+
                                     break;
                             }
                             break;

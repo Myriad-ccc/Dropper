@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
 
 namespace Dropper
 {
@@ -37,7 +35,25 @@ namespace Dropper
 
             expandedWeightMenu.Size = new Size(weightPanel.Width, 72);
             QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 3);
-            expandedWeightMenu.WeightChanged += newWeight => weightPanel.weightDisplay.Text = $"{newWeight:F1}";
+            expandedWeightMenu.WeightChanged += newWeight =>
+            {
+                if (QOL.ValidFloat32(newWeight))
+                    block.Weight = newWeight;
+                else expandedWeightMenu.ResetWeight += () =>
+                {
+                    block.Weight = weightPanel.originalWeight;
+                    weightPanel.weightDisplay.Text = $"{block.Weight:F1}";
+                };
+
+                if (block.Weight > 100 || block.Weight < -100)
+                    weightPanel.weightDisplay.Text = $"{block.Weight}";
+                else if (block.Weight == (float)Math.PI || block.Weight == -(float)Math.PI)
+                    weightPanel.weightDisplay.Text = $"{Math.PI:F5}";
+                else if (block.Weight == (float)Math.E || block.Weight == -(float)Math.E)
+                    weightPanel.weightDisplay.Text = $"{Math.E:F5}";
+                else
+                    weightPanel.weightDisplay.Text = $"{newWeight:F1}";
+            };
             expandedWeightMenu.ResetWeight += () =>
             {
                 block.Weight = weightPanel.originalWeight;
