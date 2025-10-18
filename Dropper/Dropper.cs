@@ -62,29 +62,29 @@ namespace Dropper
 
             Button closingButton = new Button()
             {
-                Size = new Size(56, 56),
-                ForeColor = Color.FromArgb(255, 163, 42, 42),
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Text = "✖",
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
+                Size = new Size(64, 64),
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.FromArgb(255, 163, 42, 42),
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                Text = "✖",
             };
-            closingButton.Location = new Point(Width - 4 - closingButton.Width, 4);
+            closingButton.Location = new Point(ClientSize.Width - closingButton.Width, 0);
             closingButton.MouseClick += (s, ev) => Close();
             borderBox.Controls.Add(closingButton);
 
             Button minimizeButton = new Button()
             {
-                Size = new Size(56, 56),
-                ForeColor = Color.FromArgb(255, 42, 163, 150),
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Text = "―",
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.FromArgb(255, 42, 163, 150),
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                Size = closingButton.Size,
+                Text = "―",
             };
-            minimizeButton.Location = new Point(closingButton.Left - 16 - minimizeButton.Width, 4);
+            QOL.Align.Left(minimizeButton, closingButton, 4);
             minimizeButton.MouseClick += (s, ev) => WindowState = FormWindowState.Minimized;
             borderBox.Controls.Add(minimizeButton);
 

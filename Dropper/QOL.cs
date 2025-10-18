@@ -126,6 +126,7 @@ namespace Dropper
                         otherControl.Location.Y + otherControl.Height + CheckGap(gap));
             }
         }
+
         public static class GenericControls
         {
             public static Button Button(float? fontSize = null, string text = null, Color? forecolor = null, Size? size = null)
@@ -141,6 +142,19 @@ namespace Dropper
                     Font = new Font(VCROSDMONO, fontSize ?? 20f, FontStyle.Regular),
                     ForeColor = forecolor ?? Color.White,
                     Text = text ?? string.Empty,
+                };
+            }
+        }
+
+        public static class Obscure
+        {
+            public static CustomPanel DrawOverTrackBarRail(TrackBar bar)
+            {
+                return new CustomPanel()
+                {
+                    Location = new Point(bar.Bounds.X + 8, bar.Bounds.Y + 8),
+                    Size = new Size(bar.Width - 16, 4),
+                    BackColor = Color.RoyalBlue,
                 };
             }
         }

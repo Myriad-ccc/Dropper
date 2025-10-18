@@ -7,8 +7,8 @@ namespace Dropper
 {
     public class WeightPanel : CustomPanel
     {
-        public ClickFilter WeightDisplayFilter;
         private readonly Block Block;
+        public ClickFilter WeightDisplayFilter;
 
         public TextBox weightDisplay;
         public float originalWeight;
@@ -41,28 +41,18 @@ namespace Dropper
                     ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
             };
 
-            var weightLabel = new Label()
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Left,
-                ForeColor = Color.White,
-                Font = new Font(QOL.VCROSDMONO, 18f),
-                Text = "Weight",
-                Height = Height,
-            };
-            Controls.Add(weightLabel);
-
             weightDisplay = new TextBox()
             {
                 Anchor = AnchorStyles.Left,
+                TabStop = false,
+                BorderStyle = BorderStyle.None,
                 BackColor = QOL.Colors.SameRGB(100),
                 ForeColor = Color.White,
                 Font = new Font(QOL.VCROSDMONO, 17f),
                 Text = $"{Block.Weight:F1}",
-                Width = weightLabel.Width,
-                BorderStyle = BorderStyle.None,
-                TabStop = false,
+                Width = 92,
+                Location = new Point()
             };
-            QOL.Align.Right(weightDisplay, weightLabel);
             weightDisplay.TextChanged += (s, ev) =>
             {
                 if (float.TryParse(weightDisplay.Text, out float newWeight))
@@ -83,7 +73,7 @@ namespace Dropper
             Application.AddMessageFilter(WeightDisplayFilter);
 
             var resetWeight = QOL.GenericControls.Button(18f, "↻", Color.White);
-            QOL.Align.Right(resetWeight, weightDisplay, 15);
+            QOL.Align.Right(resetWeight, weightDisplay, 4);
             Controls.Add(resetWeight);
             resetWeight.MouseClick += (s, ev) =>
             {
@@ -92,7 +82,7 @@ namespace Dropper
             };
 
             collapsableMenu = QOL.GenericControls.Button(12f, "+", Color.White);
-            QOL.Align.Right(collapsableMenu, resetWeight, 1);
+            QOL.Align.Right(collapsableMenu, resetWeight);
             Controls.Add(collapsableMenu);
             collapsableMenu.MouseClick += (s, ev) => CollapseExpandedWeightPanel?.Invoke(this, EventArgs.Empty);
         }

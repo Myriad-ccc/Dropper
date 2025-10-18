@@ -6,6 +6,7 @@ namespace Dropper
     public class ToolbarPanel : CustomPanel
     {
         public WeightPanel weightPanel;
+        public WeightSlider weightSlider;
         public ExpandedWeightMenu expandedWeightMenu;
         public PivotPanel pivotPanel;
         public GravityPanel gravityPanel;
@@ -13,29 +14,29 @@ namespace Dropper
         public ToolbarPanel(Block block, Gravity gravity)
         {
             Width = 1024;
-            Height = 100; //96
+            Height = 98; //96
 
             weightPanel = new WeightPanel(block);
+            weightSlider = new WeightSlider(block);
             expandedWeightMenu = new ExpandedWeightMenu(block);
             pivotPanel = new PivotPanel(block, gravity);
             gravityPanel = new GravityPanel(block, gravity);
 
             Controls.Add(weightPanel);
+            Controls.Add(weightSlider);
             Controls.Add(expandedWeightMenu);
             Controls.Add(pivotPanel);
             Controls.Add(gravityPanel);
 
             QOL.ClampControlWidth(weightPanel);
-            weightPanel.Location = new Point(Left, Top);
+            weightPanel.Location = new Point();
             weightPanel.CollapseExpandedWeightPanel += (s, ev) =>
             {
                 expandedWeightMenu.Visible = !expandedWeightMenu.Visible;
                 weightPanel.collapsableMenu.Text = expandedWeightMenu.Visible ? "-" : "+";
             };
 
-            expandedWeightMenu.Size = new Size(weightPanel.Width, 72);
-            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 3);
-            expandedWeightMenu.WeightChanged += newWeight =>
+            void OnWeightChanged(float newWeight)
             {
                 if (QOL.ValidFloat32(newWeight))
                     block.Weight = newWeight;
@@ -45,15 +46,24 @@ namespace Dropper
                     weightPanel.weightDisplay.Text = $"{block.Weight:F1}";
                 };
 
-                if (block.Weight > 100 || block.Weight < -100)
-                    weightPanel.weightDisplay.Text = $"{block.Weight}";
-                else if (block.Weight == (float)Math.PI || block.Weight == -(float)Math.PI)
+                if (block.Weight > -100 && block.Weight < 100)
+                    weightPanel.weightDisplay.Text = $"{newWeight:F1}";
+                else if (block.Weight == (float)Math.PI)
                     weightPanel.weightDisplay.Text = $"{Math.PI:F5}";
-                else if (block.Weight == (float)Math.E || block.Weight == -(float)Math.E)
+                else if (block.Weight == (float)Math.E)
                     weightPanel.weightDisplay.Text = $"{Math.E:F5}";
                 else
-                    weightPanel.weightDisplay.Text = $"{newWeight:F1}";
-            };
+                    weightPanel.weightDisplay.Text = $"{newWeight:F0}";
+            }
+
+            QOL.ClampControlWidth(weightSlider);
+            QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
+            weightSlider.WeightChanged += OnWeightChanged;
+
+            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
+            expandedWeightMenu.BringToFront();
+            expandedWeightMenu.MouseClick += (s, ev) => weightSlider.Visible = false;
+            expandedWeightMenu.WeightChanged += OnWeightChanged;
             expandedWeightMenu.ResetWeight += () =>
             {
                 block.Weight = weightPanel.originalWeight;

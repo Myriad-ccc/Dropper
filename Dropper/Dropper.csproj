@@ -76,7 +76,13 @@
     <Compile Include="ToolbarPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="TrackBarOverlayed.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="WeightPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="WeightSlider.cs">
       <SubType>Component</SubType>
     </Compile>
     <EmbeddedResource Include="Dropper.resx">

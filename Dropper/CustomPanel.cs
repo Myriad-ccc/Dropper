@@ -6,12 +6,12 @@ namespace Dropper
     {
         public CustomPanel()
         {
-            this.DoubleBuffered = true;
-            this.SetStyle(
+            DoubleBuffered = true;
+            SetStyle(
                 ControlStyles.UserPaint |
                 ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer, true);
-            this.UpdateStyles();
+            UpdateStyles();
         }
     }
 }

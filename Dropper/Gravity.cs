@@ -42,8 +42,19 @@ namespace Dropper
 
             float terminalVelocity = (block.Weight * block.Area) / 10;
 
-            block.VX = Math.Min(block.VX + block.Weight * deltaTime * 10 * X, terminalVelocity);
-            block.VY = Math.Min(block.VY + block.Weight * deltaTime * 10 * Y, terminalVelocity);
+            block.VX = block.VX + block.Weight * deltaTime * 10 * X;
+            block.VY = block.VY + block.Weight * deltaTime * 10 * Y;
+
+            if (block.Weight > 0)
+            {
+                block.VX = Math.Min(block.VX, terminalVelocity);
+                block.VY = Math.Min(block.VY, terminalVelocity);
+            }
+            if (block.Weight < 0)
+            {
+                block.VX = Math.Min(block.VX, -terminalVelocity);
+                block.VY = Math.Min(block.VY, -terminalVelocity);
+            }
 
             block.Bounds = new RectangleF(
                 new PointF(

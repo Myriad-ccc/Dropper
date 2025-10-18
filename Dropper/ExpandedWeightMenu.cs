@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -7,7 +6,6 @@ namespace Dropper
 {
     public class ExpandedWeightMenu : CustomPanel
     {
-        private readonly Random random = new Random();
         private readonly Block Block;
 
         public event Action<float> WeightChanged;
@@ -20,17 +18,18 @@ namespace Dropper
 
             Paint += (s, ev) =>
             {
-                using (Pen borderPen = new Pen(QOL.Colors.SameRGB(160), 1f))
+                using (Pen borderPen = new Pen(QOL.RandomColor(), 1f))
                     ev.Graphics.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 2);
             };
         }
 
         private void BuildExpandedWeightMenu()
         {
-            Visible = true;
+            Visible = false;
             BackColor = Color.Transparent;
 
-            Button[,] buttons = new Button[11, 3];
+            Button[,] buttons = new Button[6, 3];
+            Size = new Size(buttons.GetLength(0) * 24, buttons.GetLength(1) * 24);
             for (int r = 0; r < buttons.GetLength(0); r++)
             {
                 for (int c = 0; c < buttons.GetLength(1); c++)
@@ -199,50 +198,35 @@ namespace Dropper
                                     b.ForeColor = Color.Gold;
                                     b.Text = "⌖";
 
-                                    bool on = false;
-                                    var stopwatch = new Stopwatch();
-                                    float lastElapsed = 0;
-                                    var timer = new Timer() { Interval = 10 };
+                                    float secondsDragged = 0;
+                                    float weightPerSecond = 0;
+                                    int updateRate = 100;
+                                    var timer = new Timer() { Interval = updateRate };
                                     timer.Tick += (s, ev) =>
                                     {
                                         if (Block.MouseDragging)
                                         {
-                                            if (!stopwatch.IsRunning)
-                                                stopwatch.Start();
-                                            else
-                                            {
-                                                float elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000.0f;
-                                                float deltaSeconds = elapsedSeconds - lastElapsed;
-                                                int multiplier = (int)Math.Pow(1.1f, elapsedSeconds);
-                                                Block.Weight += (float)(deltaSeconds * multiplier * 5);
-                                                WeightChanged?.Invoke(Block.Weight);
-                                                lastElapsed = elapsedSeconds;
-                                            }
+                                            secondsDragged += updateRate / 1000.0f;
+                                            float multiplier = Math.Max(1.0f, secondsDragged / 2.0f);
+                                            Block.Weight += (float)(5.0f / (1000.0f / updateRate) * Math.Pow(multiplier, 3));
+                                            WeightChanged?.Invoke(Block.Weight);
                                         }
                                         else
-                                        {
-                                            if (stopwatch.IsRunning)
-                                                stopwatch.Stop();
-                                        }
-                                            
+                                            secondsDragged = 0.0f;
                                     };
+                                    bool accumulatorOn = false;
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        on = !on;
-                                        if (on)
+                                        accumulatorOn = !accumulatorOn;
+                                        if (accumulatorOn)
                                         {
                                             timer.Start();
-                                            b.ForeColor = Color.MediumVioletRed;
-                                            stopwatch.Reset();
-                                            lastElapsed = 0;
+                                            b.ForeColor = Color.LightSeaGreen;
                                         }
                                         else
-                                        {
-                                            timer.Stop();
                                             b.ForeColor = Color.Gold;
-                                            stopwatch.Stop();
-                                        }
                                     };
+
                                     break;
                                 case 5:
 
