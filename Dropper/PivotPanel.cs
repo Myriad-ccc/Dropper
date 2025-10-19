@@ -8,12 +8,10 @@ namespace Dropper
     public class PivotPanel : CustomPanel
     {
         private readonly Random random = new Random();
-        private readonly Block Block;
         private readonly Gravity Gravity;
 
-        public PivotPanel(Block block, Gravity gravity)
+        public PivotPanel(Gravity gravity)
         {
-            Block = block;
             Gravity = gravity;
             BuildPivotPanel();
         }
@@ -32,7 +30,7 @@ namespace Dropper
 
             var pivots = new CustomPanel
             {
-                BackColor = QOL.Colors.SameRGB(60),
+                BackColor = QOL.RGB(60),
                 Width = Card.CardWidth * 3,
                 Height = Card.CardHeight * 3,
             };

@@ -10,7 +10,10 @@ namespace Dropper
         private static readonly Random random = new Random();
         public static readonly string VCROSDMONO = "VCR OSD Mono";
 
-        public static Color RandomColor() => Color.FromArgb(255, random.Next(256), random.Next(256), random.Next(256));
+        public static int RandomInt(int max, int? min = null) => random.Next(min ?? 0, max);
+
+        public static Color RandomColor() => Color.FromArgb(255, RandomInt(256), RandomInt(256), RandomInt(256));
+        public static Color RGB(int v1, int? v2 = null, int? v3 = null) => Color.FromArgb(255, v1, v2 ?? v1, v3 ?? v1);
 
         public static void WriteOut(object o) => MessageBox.Show($"{o}");
         public static void QuickWriteOut(Func<object> getter, Control surface)
@@ -38,18 +41,7 @@ namespace Dropper
             if (num == 0 || num == 1) return 1;
             return num *= Factorial(num - 1);
         }
-
-        public static class Colors
-        {
-            public static Color RandomColor() => Color.FromArgb(255, random.Next(256), random.Next(256), random.Next(256));
-            public static Color SameRGB(int value) => Color.FromArgb(255, value, value, value);
-            public static Color SameRG(int value) => Color.FromArgb(255, value, value, random.Next(256));
-            public static Color SameRB(int value) => Color.FromArgb(255, value, random.Next(256), value);
-            public static Color SameGB(int value) => Color.FromArgb(255, random.Next(256), value, value);
-            public static Color SameR(int value) => Color.FromArgb(255, value, random.Next(256), random.Next(256));
-            public static Color SameG(int value) => Color.FromArgb(255, random.Next(256), value, random.Next(256));
-            public static Color SameB(int value) => Color.FromArgb(255, random.Next(256), random.Next(256), value);
-        }
+        
         public static class Align
         {
             private static int CheckGap(int? gap) => gap ?? 0;
@@ -137,7 +129,7 @@ namespace Dropper
                     TabStop = false,
                     FlatStyle = FlatStyle.Flat,
                     TextAlign = ContentAlignment.MiddleCenter,
-                    BackColor = Colors.SameRGB(20),
+                    BackColor = RGB(20),
                     Size = size ?? new Size(24, 24),
                     Font = new Font(VCROSDMONO, fontSize ?? 20f, FontStyle.Regular),
                     ForeColor = forecolor ?? Color.White,

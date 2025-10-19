@@ -32,7 +32,7 @@ namespace Dropper
         private void BuildWeightPanel()
         {
             ForeColor = Color.Transparent;
-            BackColor = QOL.Colors.SameRGB(35);
+            BackColor = QOL.RGB(35);
             Width = 264;
             Height = 24;
             Paint += (s, ev) =>
@@ -46,7 +46,7 @@ namespace Dropper
                 Anchor = AnchorStyles.Left,
                 TabStop = false,
                 BorderStyle = BorderStyle.None,
-                BackColor = QOL.Colors.SameRGB(100),
+                BackColor = QOL.RGB(100),
                 ForeColor = Color.White,
                 Font = new Font(QOL.VCROSDMONO, 17f),
                 Text = $"{Block.Weight:F1}",

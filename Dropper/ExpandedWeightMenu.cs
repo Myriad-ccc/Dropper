@@ -189,7 +189,8 @@ namespace Dropper
                                     b.Text = "/";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = 1 / Block.Weight;
+                                        if (Block.Weight != 0)
+                                            Block.Weight = 1 / Block.Weight;
                                         WeightChanged?.Invoke(Block.Weight);
                                     };
                                     break;
@@ -329,7 +330,6 @@ namespace Dropper
                             }
                             break;
                     }
-
                     Controls.Add(b);
                 }
             }

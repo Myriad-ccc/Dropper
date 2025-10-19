@@ -76,7 +76,7 @@ namespace Dropper
             Controls.Add(displayVY);
 
             foreach (var button in Controls.OfType<Button>())
-                button.BackColor = QOL.Colors.SameRGB(20);
+                button.BackColor = QOL.RGB(20);
         }
     }
 }

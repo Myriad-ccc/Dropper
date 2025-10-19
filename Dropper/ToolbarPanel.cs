@@ -15,11 +15,12 @@ namespace Dropper
         {
             Width = 1024;
             Height = 98; //96
+            BackColor = QOL.RGB(50);
 
             weightPanel = new WeightPanel(block);
             weightSlider = new WeightSlider(block);
             expandedWeightMenu = new ExpandedWeightMenu(block);
-            pivotPanel = new PivotPanel(block, gravity);
+            pivotPanel = new PivotPanel(gravity);
             gravityPanel = new GravityPanel(block, gravity);
 
             Controls.Add(weightPanel);

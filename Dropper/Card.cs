@@ -14,7 +14,7 @@ namespace Dropper
         public int DeckRow { get; set; }
         public int DeckCol { get; set; }
 
-        private static readonly Color defaultBG = QOL.Colors.SameRGB(35);
+        private static readonly Color defaultBG = QOL.RGB(35);
 
         public Card(int deckRow, int deckCol)
         {

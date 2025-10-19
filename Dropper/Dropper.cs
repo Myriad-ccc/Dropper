@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -7,21 +6,15 @@ namespace Dropper
 {
     public partial class Form1 : Form
     {
-        private readonly Random random = new Random();
+        private TitleBar titleBar;
 
-        private Panel borderBox;
-        private static Color TitleColor = QOL.RandomColor();
-        private static Color ShadowTitleColor = QOL.RandomColor();
-
-        private Block block = new Block();
+        private readonly Block block = new Block();
+        private readonly Gravity gravity = new Gravity();
 
         private CustomPanel area;
         private ToolbarPanel toolBar;
         private CustomPanel floor;
         private Point startPoint;
-        private Dictionary<string, int> userBounds;
-
-        private readonly Gravity gravity = new Gravity();
 
         public Form1() => InitializeComponent();
 
@@ -37,11 +30,12 @@ namespace Dropper
             Text = "Dropper";
             FormBorderStyle = FormBorderStyle.None;
             Size = new Size(1024, 896);
-            BackColor = Color.FromArgb(255, 20, 20, 20);
+            BackColor = QOL.RGB(20);
             KeyPreview = true;
             DoubleBuffered = true;
             FormClosing += Form1_Closing;
-            BorderMenu();
+            titleBar = new TitleBar(new Size(Width, 64));
+            Controls.Add(titleBar);
             CenterToScreen();
         }
 
@@ -51,131 +45,24 @@ namespace Dropper
                 Application.RemoveMessageFilter(toolBar.weightPanel.WeightDisplayFilter);
         }
 
-        private void BorderMenu()
-        {
-            borderBox = new Panel()
-            {
-                Location = new Point(0, 0),
-                Size = new Size(Width, 64)
-            };
-            Controls.Add(borderBox);
-
-            Button closingButton = new Button()
-            {
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(64, 64),
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.FromArgb(255, 163, 42, 42),
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                Text = "✖",
-            };
-            closingButton.Location = new Point(ClientSize.Width - closingButton.Width, 0);
-            closingButton.MouseClick += (s, ev) => Close();
-            borderBox.Controls.Add(closingButton);
-
-            Button minimizeButton = new Button()
-            {
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.FromArgb(255, 42, 163, 150),
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                Size = closingButton.Size,
-                Text = "―",
-            };
-            QOL.Align.Left(minimizeButton, closingButton, 4);
-            minimizeButton.MouseClick += (s, ev) => WindowState = FormWindowState.Minimized;
-            borderBox.Controls.Add(minimizeButton);
-
-            borderBox.Paint += (s, ev) =>
-            {
-                Graphics g = ev.Graphics;
-
-                using (SolidBrush borderPen = new SolidBrush(Color.FromArgb(255, 35, 35, 35)))
-                    g.FillRectangle(borderPen, borderBox.ClientRectangle);
-
-                using (var shadowBrush = new SolidBrush(TitleColor))
-                using (var mainBrush = new SolidBrush(ShadowTitleColor))
-                using (var font = new Font(QOL.VCROSDMONO, 32f))
-                {
-                    g.DrawString(Text, font, shadowBrush, new Point(10, 10));
-                    g.DrawString(Text, font, mainBrush, new Point(9, 9));
-                }
-            };
-            DragControl(borderBox, true);
-        }
-
-        public void DragControl(Control control, bool parent)
-        {
-            var target = parent ? control.Parent : control;
-
-            bool MouseDragging = false;
-            Point cursorPos = Cursor.Position;
-
-            control.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left)
-                {
-                    MouseDragging = true;
-                    cursorPos = Cursor.Position;
-                }
-                if (ev.Button == MouseButtons.Right && !MouseDragging)
-                {
-                    TitleColor = QOL.RandomColor();
-                    ShadowTitleColor = QOL.RandomColor();
-                    control.Invalidate();
-                }
-            };
-
-            control.MouseUp += (s, ev) => MouseDragging = false;
-
-            control.MouseMove += (s, ev) =>
-            {
-                if (MouseDragging)
-                {
-                    int deltaX = Cursor.Position.X - cursorPos.X;
-                    int deltaY = Cursor.Position.Y - cursorPos.Y;
-
-                    target.Left += deltaX;
-                    target.Top += deltaY;
-
-                    cursorPos = Cursor.Position;
-
-                    if (parent)
-                        target.Invalidate();
-                    else
-                        target.Parent.Invalidate();
-                }
-            };
-        }
-
         private void SetScene()
         {
             area = new CustomPanel
             {
-                Location = new Point(0, borderBox.Bottom),
-                Size = new Size(ClientSize.Width, ClientSize.Height - borderBox.Height)
+                Location = new Point(0, titleBar.Bottom),
+                Size = new Size(ClientSize.Width, ClientSize.Height - titleBar.Height)
             };
             area.Paint += Area_Paint;
             Controls.Add(area);
-            block.MagneticCore = new Point(
-                (int)(area.Width / 2 - block.W / 2),
-                (int)(area.Height / 2 - block.H / 2));
 
             toolBar = new ToolbarPanel(block, gravity);
-            toolBar.Paint += (s, ev) =>
-            {
-                var g = ev.Graphics;
-                using (var toolBarBrush = new SolidBrush(Color.FromArgb(255, 50, 50, 50)))
-                    g.FillRectangle(toolBarBrush, toolBar.ClientRectangle);
-            };
             area.Controls.Add(toolBar);
 
             floor = new CustomPanel
             {
                 Location = new Point(0, area.Height - 32),
-                Size = new Size(area.Width, 32)
+                Size = new Size(area.Width, 32),
+                BackColor = QOL.RGB(40)
             };
             floor.Paint += (s, ev) =>
             {
@@ -189,13 +76,17 @@ namespace Dropper
             startPoint = new Point((int)(floor.Width / 2 - block.W / 2), (int)(floor.Top - block.H));
             block.Bounds = new RectangleF(startPoint, block.Size);
 
-            userBounds = new Dictionary<string, int>
-            {
-                ["Left"] = area.Left,
-                ["Top"] = toolBar.Bottom,
-                ["Right"] = area.Right,
-                ["Bottom"] = floor.Top
-            };
+            block.MagneticCore = new Point(
+                (int)(area.Width / 2 - block.W / 2),
+                (int)(area.Height / 2 - block.H / 2));
+
+            block.UserBounds = new Rectangle(
+                new Point(
+                    area.Left,
+                toolBar.Bottom),
+                new Size(
+                    area.Width,
+                floor.Top - toolBar.Bottom));
         }
 
         private void Area_Paint(object sender, PaintEventArgs e)
@@ -210,77 +101,8 @@ namespace Dropper
 
         private void BlockPhysics()
         {
-            DragBlock(block, area);
+            block.Drag(area);
             CheckGravity(block);
-        }
-
-        public void DragBlock(Block block, Control parent)
-        {
-            block.MouseDragging = false;
-            PointF cursorPos = Cursor.Position;
-
-            parent.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left && block.Bounds.Contains(ev.Location))
-                {
-                    block.MouseDragging = true;
-                    cursorPos = Cursor.Position;
-                    block.ResetVelocity();
-                }
-            };
-
-            parent.MouseUp += (s, ev) => block.MouseDragging = false;
-
-            parent.MouseMove += (s, ev) =>
-            {
-                if (block.MouseDragging)
-                {
-                    float deltaX = Cursor.Position.X - cursorPos.X;
-                    float deltaY = Cursor.Position.Y - cursorPos.Y;
-
-                    block.Bounds = new RectangleF(
-                        new PointF(
-                            block.X + deltaX,
-                            block.Y + deltaY),
-                        block.Bounds.Size);
-
-                    cursorPos = Cursor.Position;
-                    ConstrainToArea(block);
-                    parent.Invalidate();
-                }
-            };
-        }
-
-        private void ConstrainToArea(Block block)
-        {
-            float nx = block.X;
-            float ny = block.Y;
-
-            if (block.Left < userBounds["Left"])
-            {
-                nx = userBounds["Left"];
-                block.ResetVX();
-            }
-
-            if (block.Right > userBounds["Right"])
-            {
-                nx = userBounds["Right"] - block.W;
-                block.ResetVX();
-            }
-
-            if (block.Top < userBounds["Top"])
-            {
-                ny = userBounds["Top"];
-                block.ResetVY();
-            }
-
-            if (block.Bottom > userBounds["Bottom"])
-            {
-                ny = userBounds["Bottom"] - block.H;
-                block.ResetVY();
-            }
-
-            block.Bounds = new RectangleF(new PointF(nx, ny), block.Size);
         }
 
         private void CheckGravity(Block block)
@@ -295,7 +117,7 @@ namespace Dropper
                 if (!block.MouseDragging)
                 {
                     gravity.Apply(block);
-                    ConstrainToArea(block);
+                    block.ConstrainToArea();
                     area.Invalidate();
                 }
             };

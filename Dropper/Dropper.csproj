@@ -73,6 +73,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QOL.cs" />
+    <Compile Include="TitleBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="ToolbarPanel.cs">
       <SubType>Component</SubType>
     </Compile>
