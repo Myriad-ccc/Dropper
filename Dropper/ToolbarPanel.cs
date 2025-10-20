@@ -13,7 +13,6 @@ namespace Dropper
 
         public ToolbarPanel(Block block, Gravity gravity)
         {
-            Width = 1024;
             Height = 98; //96
             BackColor = QOL.RGB(50);
 
@@ -21,7 +20,7 @@ namespace Dropper
             weightSlider = new WeightSlider(block);
             expandedWeightMenu = new ExpandedWeightMenu(block);
             pivotPanel = new PivotPanel(gravity);
-            gravityPanel = new GravityPanel(block, gravity);
+            gravityPanel = new GravityPanel(block);
 
             Controls.Add(weightPanel);
             Controls.Add(weightSlider);

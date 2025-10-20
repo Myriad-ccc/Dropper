@@ -225,7 +225,10 @@ namespace Dropper
                                             b.ForeColor = Color.LightSeaGreen;
                                         }
                                         else
+                                        {
+                                            timer.Stop();
                                             b.ForeColor = Color.Gold;
+                                        }
                                     };
 
                                     break;

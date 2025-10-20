@@ -86,5 +86,23 @@ namespace Dropper
             Controls.Add(collapsableMenu);
             collapsableMenu.MouseClick += (s, ev) => CollapseExpandedWeightPanel?.Invoke(this, EventArgs.Empty);
         }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+
+            var form = FindForm();
+            if (form != null)
+            {
+                form.FormClosing -= FormClosing;
+                form.FormClosing += FormClosing;
+            }
+        }
+
+        private void FormClosing(object sender, EventArgs e)
+        {
+            if (WeightDisplayFilter != null)
+                Application.RemoveMessageFilter(WeightDisplayFilter);
+        }
     }
 }

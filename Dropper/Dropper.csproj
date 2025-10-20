@@ -46,6 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Area.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Block.cs" />
     <Compile Include="Card.cs">
       <SubType>Component</SubType>
@@ -61,6 +64,12 @@
       <DependentUpon>Dropper.cs</DependentUpon>
     </Compile>
     <Compile Include="ExpandedWeightMenu.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Floor.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="GameArea.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Gravity.cs" />

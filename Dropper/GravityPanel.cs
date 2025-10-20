@@ -8,14 +8,12 @@ namespace Dropper
     public class GravityPanel : CustomPanel
     {
         private readonly Block Block;
-        private readonly Gravity Gravity;
 
         public Label displayVX, displayVY;
 
-        public GravityPanel(Block block, Gravity gravity)
+        public GravityPanel(Block block)
         {
             Block = block;
-            Gravity = gravity;
             BuildGravityPanel();
         }
 
@@ -39,8 +37,9 @@ namespace Dropper
             {
                 UseCompatibleTextRendering = true,
                 TabStop = false,
-                Font = new Font(QOL.VCROSDMONO, 20f),
                 FlatStyle = FlatStyle.Flat,
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                BackColor = QOL.RGB(20),
                 Text = gravityModes[gravityModeIndex].ToString(),
                 AutoSize = true,
             };
@@ -74,9 +73,6 @@ namespace Dropper
             };
             QOL.Align.Bottom.Center(displayVY, displayVX, 1);
             Controls.Add(displayVY);
-
-            foreach (var button in Controls.OfType<Button>())
-                button.BackColor = QOL.RGB(20);
         }
     }
 }

@@ -7,10 +7,11 @@ namespace Dropper
     public class Block
     {
         public RectangleF Bounds { get; set; }
+        public SizeF Size = new Size(64, 64);
+        public static Point StartPoint { get; set; }
         public bool MouseDragging { get; set; }
         public Rectangle UserBounds { get; set; }
-        public float Weight { get; set; } = 10;
-        public SizeF Size = new Size(64, 64);
+        public float Weight { get; set; } = 10.0f;
 
         public Color? Color { get; set; } = QOL.RandomColor();
         public Color? BorderColor { get; set; } = QOL.RandomColor();
@@ -24,8 +25,6 @@ namespace Dropper
         public bool Bounce { get; set; } = false;
 
         public float Area => Size.Width * Size.Height;
-        public float PeakAltitude { get; set; } = 0f;
-        public float MinAltitude { get; set; }
 
         public float X => Bounds.X;
         public float Y => Bounds.Y;

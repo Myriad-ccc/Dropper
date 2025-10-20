@@ -8,8 +8,13 @@ namespace Dropper
     {
         public int X { get; set; } = 0;
         public int Y { get; set; } = 1;
+
         public Timer Timer { get; set; } = new Timer() { Interval = 10 };
+        public event Action<float> VXChanged;
+        public event Action<float> VYChanged;
         public int Update => Timer.Interval;
+
+        public event Action Redraw;
 
         public void Apply(Block block)
         {
@@ -42,8 +47,8 @@ namespace Dropper
 
             float terminalVelocity = (block.Weight * block.Area) / 10;
 
-            block.VX = block.VX + block.Weight * deltaTime * 10 * X;
-            block.VY = block.VY + block.Weight * deltaTime * 10 * Y;
+            block.VX += block.Weight * deltaTime * 10 * X;
+            block.VY += block.Weight * deltaTime * 10 * Y;
 
             if (block.Weight > 0)
             {
@@ -83,6 +88,27 @@ namespace Dropper
                     block.X + stepX,
                     block.Y + stepY),
                 block.Size);
+        }
+
+        public void CheckGravity(Block block)
+        {
+            Timer.Tick += (s, ev) =>
+            {
+                if (!block.MouseDragging)
+                {
+                    Apply(block);
+                    block.ConstrainToArea();
+
+                    if (block.Gravity == Block.GravityMode.Dynamic)
+                    {
+                        VXChanged?.Invoke(block.VX);
+                        VYChanged?.Invoke(block.VY);
+
+                    }
+                    Redraw?.Invoke();
+                }
+            };
+            Timer.Start();
         }
     }
 }
