@@ -19,10 +19,12 @@ namespace Dropper
         public float BorderWidth { get; set; } = 1f;
         public PointF MagneticCore { get; set; }
 
-        public float VX { get; set; } = 0f;
-        public float VY { get; set; } = 0f;
+        public float VX { get; set; } = 0.0f;
+        public float VY { get; set; } = 0.0f;
 
-        public bool Bounce { get; set; } = false;
+        public bool CanBounce { get; set; } = true;
+        public float Restituion { get; set; } = 0.50f;
+        public float PeakVY { get; set; } = 0.0f;
 
         public float Area => Size.Width * Size.Height;
 

@@ -69,11 +69,8 @@ namespace Dropper
                     seconds = 0;
 
                     positive = !positive;
-                    if (positive)
-                        bar.RailCover = Color.LimeGreen;
-                    else
-                        bar.RailCover = Color.IndianRed;
-                    timer.Start();
+                    bar.RailCover = positive ? Color.LimeGreen : Color.IndianRed;
+
                     UpdateBar();
                     bar.Invalidate();
 

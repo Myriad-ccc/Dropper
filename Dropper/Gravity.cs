@@ -45,10 +45,10 @@ namespace Dropper
         {
             float deltaTime = updateRate / 1000f;
 
-            float terminalVelocity = (block.Weight * block.Area) / 10;
+            float terminalVelocity = (block.Weight * block.Area) / 16;
 
-            block.VX += block.Weight * deltaTime * 10 * X;
-            block.VY += block.Weight * deltaTime * 10 * Y;
+            block.VX += block.Weight * deltaTime * 16 * X;
+            block.VY += block.Weight * deltaTime * 16 * Y;
 
             if (block.Weight > 0)
             {
@@ -61,11 +61,24 @@ namespace Dropper
                 block.VY = Math.Min(block.VY, -terminalVelocity);
             }
 
+            if (block.CanBounce)
+                Bounce(block);
+
             block.Bounds = new RectangleF(
                 new PointF(
                     block.X + block.VX * deltaTime,
                     block.Y + block.VY * deltaTime),
                 block.Size);
+        }
+
+        private void Bounce(Block block)
+        {
+            block.PeakVY = Math.Max(block.PeakVY, block.VY);
+            if (block.Bottom >= block.UserBounds.Bottom - 0.5f)
+            {
+                block.VY = -block.PeakVY * block.Restituion;
+                block.PeakVY = 0.0f;
+            }
         }
 
         private void MagneticGravity(Block block)
@@ -103,7 +116,6 @@ namespace Dropper
                     {
                         VXChanged?.Invoke(block.VX);
                         VYChanged?.Invoke(block.VY);
-
                     }
                     Redraw?.Invoke();
                 }

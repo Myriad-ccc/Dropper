@@ -48,6 +48,7 @@ namespace Dropper
         {
             block.Drag(area.gameArea);
             gravity.CheckGravity(block);
+            QOL.QuickWriteOut(() => $"userbound_bottom:{block.UserBounds.Bottom:F10}, block_bottom:{block.Bottom:F10}", titleBar);
         }
     }
 }
