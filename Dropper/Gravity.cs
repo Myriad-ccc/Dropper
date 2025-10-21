@@ -44,25 +44,24 @@ namespace Dropper
         private void DynamicGravity(Block block, int updateRate)
         {
             float deltaTime = updateRate / 1000f;
+            block.UpdateTerminalVelocity();
 
-            float terminalVelocity = (block.Weight * block.Area) / 16;
+            if (block.Special == Block.SpecialMode.Bounce)
+                Bounce(block);
 
             block.VX += block.Weight * deltaTime * 16 * X;
             block.VY += block.Weight * deltaTime * 16 * Y;
 
             if (block.Weight > 0)
             {
-                block.VX = Math.Min(block.VX, terminalVelocity);
-                block.VY = Math.Min(block.VY, terminalVelocity);
+                block.VX = Math.Min(block.VX, block.TerminalVelocity);
+                block.VY = Math.Min(block.VY, block.TerminalVelocity);
             }
             if (block.Weight < 0)
             {
-                block.VX = Math.Min(block.VX, -terminalVelocity);
-                block.VY = Math.Min(block.VY, -terminalVelocity);
+                block.VX = Math.Min(block.VX, -block.TerminalVelocity);
+                block.VY = Math.Min(block.VY, -block.TerminalVelocity);
             }
-
-            if (block.CanBounce)
-                Bounce(block);
 
             block.Bounds = new RectangleF(
                 new PointF(
@@ -74,9 +73,15 @@ namespace Dropper
         private void Bounce(Block block)
         {
             block.PeakVY = Math.Max(block.PeakVY, block.VY);
-            if (block.Bottom >= block.UserBounds.Bottom - 0.5f)
+            if (block.Bottom >= block.UserBounds.Bottom - 0.225f)
             {
-                block.VY = -block.PeakVY * block.Restituion;
+                block.Bounds = new RectangleF(
+                    new PointF(
+                        block.X,
+                        block.UserBounds.Bottom - block.H),
+                    block.Size);
+
+                block.VY = -block.PeakVY * 0.70f;
                 block.PeakVY = 0.0f;
             }
         }

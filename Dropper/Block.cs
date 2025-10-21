@@ -8,25 +8,27 @@ namespace Dropper
     {
         public RectangleF Bounds { get; set; }
         public SizeF Size = new Size(64, 64);
-        public static Point StartPoint { get; set; }
+
         public bool MouseDragging { get; set; }
         public Rectangle UserBounds { get; set; }
-        public float Weight { get; set; } = 10.0f;
 
         public Color? Color { get; set; } = QOL.RandomColor();
         public Color? BorderColor { get; set; } = QOL.RandomColor();
 
         public float BorderWidth { get; set; } = 1f;
+
+        public float Weight { get; set; } = 10.0f;
+        public static Point StartPoint { get; set; }
         public PointF MagneticCore { get; set; }
 
         public float VX { get; set; } = 0.0f;
         public float VY { get; set; } = 0.0f;
 
-        public bool CanBounce { get; set; } = true;
         public float Restituion { get; set; } = 0.50f;
         public float PeakVY { get; set; } = 0.0f;
 
         public float Area => Size.Width * Size.Height;
+        public float TerminalVelocity { get; set; }
 
         public float X => Bounds.X;
         public float Y => Bounds.Y;
@@ -44,8 +46,8 @@ namespace Dropper
             Color = color;
             BorderColor = borderColor;
         }
-        public enum GravityMode { Linear, Dynamic, Magnetic}
-        public GravityMode Gravity { get; set; } = GravityMode.Linear;
+        public enum GravityMode { Linear, Dynamic, Magnetic }
+        public GravityMode Gravity { get; set; } = GravityMode.Dynamic;
 
         public void ConstrainToArea()
         {
@@ -88,7 +90,7 @@ namespace Dropper
             parent.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left && Bounds.Contains(ev.Location))
-                { 
+                {
                     MouseDragging = true;
                     cursorPos = Cursor.Position;
                     ResetVelocity();
@@ -117,6 +119,8 @@ namespace Dropper
             };
         }
 
+        public float UpdateTerminalVelocity() => TerminalVelocity = (Area * Weight) / 16;
+
         public void ResetVelocity()
         {
             ResetVX();
@@ -124,5 +128,8 @@ namespace Dropper
         }
         public void ResetVX() => VX = 0;
         public void ResetVY() => VY = 0;
+
+        public enum SpecialMode { Bounce, Split, Crack }
+        public SpecialMode Special { get; set; } = SpecialMode.Bounce;
     }
 }

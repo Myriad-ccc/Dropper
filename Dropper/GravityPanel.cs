@@ -10,6 +10,7 @@ namespace Dropper
         private readonly Block Block;
 
         public Label displayVX, displayVY;
+        private Action GravityModeUpdated;
 
         public GravityPanel(Block block)
         {
@@ -31,7 +32,7 @@ namespace Dropper
 
             var gravityModes = Enum.GetValues(typeof(Block.GravityMode)).Cast<object>().ToArray();
 
-            int gravityModeIndex = 0;
+            int gravityModeIndex = 1;
             Block.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
             var gravityChoice = new Button()
             {
@@ -53,6 +54,7 @@ namespace Dropper
 
                     Block.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
                     gravityChoice.Text = gravityModes[gravityModeIndex].ToString();
+                    GravityModeUpdated?.Invoke();
                 }
             };
             Controls.Add(gravityChoice);
@@ -73,6 +75,38 @@ namespace Dropper
             };
             QOL.Align.Bottom.Center(displayVY, displayVX, 1);
             Controls.Add(displayVY);
+
+            var specialModes = Enum.GetValues(typeof(Block.SpecialMode)).Cast<object>().ToArray();
+
+            int specialModeIndex = 0;
+            Block.Special = (Block.SpecialMode)specialModes[specialModeIndex];
+            var specialChoice = new Button()
+            {
+                UseCompatibleTextRendering = true,
+                TabStop = false,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                BackColor = QOL.RGB(20),
+                Text = specialModes[specialModeIndex].ToString(),
+                AutoSize = true,
+                Visible = Block.Gravity == Block.GravityMode.Dynamic && Enabled,
+            };
+            Controls.Add(specialChoice);
+            QOL.Align.Right(specialChoice, gravityChoice, 24);
+            
+            GravityModeUpdated += () => specialChoice.Visible = Block.Gravity == Block.GravityMode.Dynamic && Enabled;
+            specialChoice.MouseClick += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left)
+                {
+                    specialModeIndex++;
+                    if (specialModeIndex == specialModes.Length)
+                        specialModeIndex = 0;
+
+                    Block.Special = (Block.SpecialMode)specialModes[specialModeIndex];
+                    specialChoice.Text = specialModes[specialModeIndex].ToString();
+                }
+            };
         }
     }
 }

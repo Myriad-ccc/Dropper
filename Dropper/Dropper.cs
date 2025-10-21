@@ -32,6 +32,12 @@ namespace Dropper
             titleBar = new TitleBar(new Size(Width, 64));
             Controls.Add(titleBar);
             CenterToScreen();
+
+            FormClosing += (s, ev) =>
+            {
+                if (area.toolBar.weightPanel.WeightDisplayFilter != null)
+                    Application.RemoveMessageFilter(area.toolBar.weightPanel.WeightDisplayFilter);
+            };
         }
 
         private void SetScene()
@@ -48,7 +54,7 @@ namespace Dropper
         {
             block.Drag(area.gameArea);
             gravity.CheckGravity(block);
-            QOL.QuickWriteOut(() => $"userbound_bottom:{block.UserBounds.Bottom:F10}, block_bottom:{block.Bottom:F10}", titleBar);
+            QOL.QuickWriteOut(() => block.Special, titleBar);
         }
     }
 }

@@ -41,15 +41,15 @@ namespace Dropper
                 (int)(gameArea.Width / 2 - block.W / 2),
                 (int)(gameArea.Height / 2 - block.H / 2));
 
-            gravity.VXChanged += newVx =>
+            gravity.VXChanged += newVX =>
             {
                 if (block.Gravity == Block.GravityMode.Dynamic)
-                    toolBar.gravityPanel.displayVX.Text = newVx > -100 && newVx < 100 ? newVx.ToString("F1") : newVx.ToString();
+                    toolBar.gravityPanel.displayVX.Text = $"{newVX:F1}";
             };
             gravity.VYChanged += newVY =>
             {
                 if (block.Gravity == Block.GravityMode.Dynamic)
-                    toolBar.gravityPanel.displayVY.Text = newVY > -100 && newVY < 100 ? newVY.ToString("F1") : newVY.ToString();
+                    toolBar.gravityPanel.displayVY.Text = $"{newVY:F1}";
             };
 
             gravity.Redraw += () =>
