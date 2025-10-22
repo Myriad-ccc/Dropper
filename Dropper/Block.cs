@@ -1,5 +1,4 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -17,18 +16,17 @@ namespace Dropper
 
         public float BorderWidth { get; set; } = 1f;
 
-        public float Weight { get; set; } = 10.0f;
+        public float Weight { get; set; } = 100.0f;
         public static Point StartPoint { get; set; }
         public PointF MagneticCore { get; set; }
 
         public float VX { get; set; } = 0.0f;
         public float VY { get; set; } = 0.0f;
 
-        public float Restituion { get; set; } = 0.50f;
-        public float PeakVY { get; set; } = 0.0f;
-
         public float Area => Size.Width * Size.Height;
         public float TerminalVelocity { get; set; }
+
+        public float Restituion { get; set; } = 0.70f;
 
         public float X => Bounds.X;
         public float Y => Bounds.Y;
@@ -54,29 +52,49 @@ namespace Dropper
             if (UserBounds == null) return;
             float nx = X;
             float ny = Y;
+            bool bouncingX = false;
+            bool bouncingY = false;
 
-            if (Left < UserBounds.Left)
+            if (Left <= UserBounds.Left)
             {
                 nx = UserBounds.Left;
-                ResetVX();
+                if (Special == SpecialMode.Bounce && VX < 0)
+                {
+                    VX = -VX * Restituion;
+                    bouncingX = true;
+                }
+                else
+                    ResetVX();
             }
 
-            if (Right > UserBounds.Right)
+            if (Right >= UserBounds.Right)
             {
                 nx = UserBounds.Right - W;
-                ResetVX();
+                if (Special == SpecialMode.Bounce && VX > 0 && !bouncingX)
+                    VX = -VX * Restituion;
+                else
+                    ResetVX();
             }
 
-            if (Top < UserBounds.Top)
+            if (Top <= UserBounds.Top)
             {
                 ny = UserBounds.Top;
-                ResetVY();
+                if (Special == SpecialMode.Bounce && VY < 0)
+                {
+                    VY = -VY * Restituion;
+                    bouncingY = true;
+                }
+                else
+                    ResetVY();
             }
 
-            if (Bottom > UserBounds.Bottom)
+            if (Bottom >= UserBounds.Bottom)
             {
                 ny = UserBounds.Bottom - H;
-                ResetVY();
+                if (Special == SpecialMode.Bounce && VY > 0 && !bouncingY)
+                    VY = -VY * Restituion;
+                else
+                    ResetVY();
             }
 
             Bounds = new RectangleF(new PointF(nx, ny), Size);

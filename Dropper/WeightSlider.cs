@@ -37,7 +37,7 @@ namespace Dropper
             bool positive = true;
             int[] barValues = { 0, 1, 2, 5, 10, 20, 35, 50, 100, 250, 500, 750, 1000, 10000, 100000 };
             bar.Maximum = barValues.Length - 1;
-            bar.Value = 4;
+            bar.Value = 8;
 
             void UpdateBar()
             {

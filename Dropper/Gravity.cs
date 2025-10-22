@@ -46,9 +46,6 @@ namespace Dropper
             float deltaTime = updateRate / 1000f;
             block.UpdateTerminalVelocity();
 
-            if (block.Special == Block.SpecialMode.Bounce)
-                Bounce(block);
-
             block.VX += block.Weight * deltaTime * 16 * X;
             block.VY += block.Weight * deltaTime * 16 * Y;
 
@@ -68,22 +65,6 @@ namespace Dropper
                     block.X + block.VX * deltaTime,
                     block.Y + block.VY * deltaTime),
                 block.Size);
-        }
-
-        private void Bounce(Block block)
-        {
-            block.PeakVY = Math.Max(block.PeakVY, block.VY);
-            if (block.Bottom >= block.UserBounds.Bottom - 0.225f)
-            {
-                block.Bounds = new RectangleF(
-                    new PointF(
-                        block.X,
-                        block.UserBounds.Bottom - block.H),
-                    block.Size);
-
-                block.VY = -block.PeakVY * 0.70f;
-                block.PeakVY = 0.0f;
-            }
         }
 
         private void MagneticGravity(Block block)

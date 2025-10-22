@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -8,10 +7,13 @@ namespace Dropper
     public class PivotPanel : CustomPanel
     {
         private readonly Random random = new Random();
+
+        private readonly Block Block;
         private readonly Gravity Gravity;
 
-        public PivotPanel(Gravity gravity)
+        public PivotPanel(Block block, Gravity gravity)
         {
+            Block = block;
             Gravity = gravity;
             BuildPivotPanel();
         }
@@ -65,10 +67,47 @@ namespace Dropper
                 }
             }
             Card.deck = cards;
+
+            var dissipateVX = new Timer() { Interval = 100 };
+            dissipateVX.Tick += (s, ev) =>
+            {
+                if (Math.Abs(Block.VX) <= 0.1)
+                {
+                    dissipateVX.Stop();
+                    Block.VX = 0;
+                }
+                Block.VX -= Block.VX / 10;
+            };
+            var dissipateVY = new Timer() { Interval = 100 };
+            dissipateVY.Tick += (s, ev) =>
+            {
+                if (Math.Abs(Block.VY) <= 0.1)
+                {
+                    dissipateVY.Stop();
+                    Block.VY = 0;
+                }
+                Block.VY -= Block.VY / 10;
+            };
             Card.Activated = (row, col) =>
             {
-                Gravity.X = offsets[col];
-                Gravity.Y = offsets[row];
+                int nx = offsets[col];
+                int ny = offsets[row];
+
+                if (nx != Gravity.X || ny != Gravity.Y)
+                {
+                    Gravity.X = nx;
+                    Gravity.Y = ny;
+
+                    if (nx != 0)
+                        dissipateVX.Stop();
+                    else
+                        dissipateVX.Start();
+
+                    if (ny != 0)
+                        dissipateVY.Stop();
+                    else
+                        dissipateVY.Start();
+                }
             };
 
             Button[] buttons = new Button[Height / Card.CardHeight];
@@ -86,10 +125,11 @@ namespace Dropper
                         buttons[x].TextAlign = ContentAlignment.TopCenter;
                         buttons[x].Text = "🎲";
                         buttons[x].ForeColor = Color.Green;
-                        bool randomPivotOn = false;
                         var randomPivotTimer = new Timer() { Interval = 1001 };
                         randomPivotTimer.Tick += (s, ev) => cards[random.Next(cards.GetLength(0)), random.Next(cards.GetLength(1))].SetActive();
 
+                        bool randomPivotOn = false;
+                        Card copyActiveCard = null;
                         var copyColor = buttons[x].ForeColor;
                         buttons[x].MouseDown += (s, ev) =>
                         {
@@ -98,13 +138,16 @@ namespace Dropper
                                 randomPivotOn = !randomPivotOn;
                                 if (randomPivotOn)
                                 {
+                                    copyActiveCard = Card.GetActive();
                                     randomPivotTimer.Start();
                                     buttons[x].ForeColor = Color.FromArgb(255, 42, 96, 163);
                                 }
                                 else
                                 {
                                     randomPivotTimer.Stop();
-                                    cards[2, 1].SetActive();
+                                    randomPivotTimer.Interval = 1001;
+
+                                    copyActiveCard?.SetActive();
                                     buttons[x].ForeColor = copyColor;
                                 }
                             }

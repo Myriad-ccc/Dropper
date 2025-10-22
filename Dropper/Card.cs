@@ -47,5 +47,13 @@ namespace Dropper
             Toggle();
             Activated?.Invoke(DeckRow, DeckCol);
         }
+
+        public static Card GetActive()
+        {
+            foreach (Card card in deck)
+                if (card.On)
+                    return card;
+            return null;
+        }
     }
 }

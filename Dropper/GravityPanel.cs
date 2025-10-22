@@ -32,7 +32,7 @@ namespace Dropper
 
             var gravityModes = Enum.GetValues(typeof(Block.GravityMode)).Cast<object>().ToArray();
 
-            int gravityModeIndex = 1;
+            int gravityModeIndex = Array.IndexOf(gravityModes, Block.GravityMode.Dynamic);
             Block.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
             var gravityChoice = new Button()
             {
@@ -78,7 +78,7 @@ namespace Dropper
 
             var specialModes = Enum.GetValues(typeof(Block.SpecialMode)).Cast<object>().ToArray();
 
-            int specialModeIndex = 0;
+            int specialModeIndex = Array.IndexOf(specialModes, Block.SpecialMode.Bounce);
             Block.Special = (Block.SpecialMode)specialModes[specialModeIndex];
             var specialChoice = new Button()
             {

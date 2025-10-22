@@ -19,7 +19,7 @@ namespace Dropper
             weightPanel = new WeightPanel(block);
             weightSlider = new WeightSlider(block);
             expandedWeightMenu = new ExpandedWeightMenu(block);
-            pivotPanel = new PivotPanel(gravity);
+            pivotPanel = new PivotPanel(block, gravity);
             gravityPanel = new GravityPanel(block);
 
             Controls.Add(weightPanel);

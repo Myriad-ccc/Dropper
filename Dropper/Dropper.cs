@@ -54,7 +54,6 @@ namespace Dropper
         {
             block.Drag(area.gameArea);
             gravity.CheckGravity(block);
-            QOL.QuickWriteOut(() => block.Special, titleBar);
         }
     }
 }
