@@ -1,66 +1,71 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
 namespace Dropper
 {
     public class Area : CustomPanel
     {
+        private Block targetBlock;
+        private readonly Gravity Gravity;
+
         public ToolbarPanel toolBar;
         public GameArea gameArea;
         public Floor floor;
 
-        public Area(Block block, Gravity gravity, Size formSize, Size titleSize)
+        public void SetActiveBlock(Block block)
         {
-            Width = formSize.Width;
-            Height = formSize.Height - titleSize.Height;
-
-            toolBar = new ToolbarPanel(block, gravity);
-            gameArea = new GameArea(block);
-            floor = new Floor();
-
-            Controls.Add(toolBar);
-            Controls.Add(gameArea);
-            Controls.Add(floor);
-
-            toolBar.Size = new Size(formSize.Width, toolBar.Height);
-            toolBar.Location = new Point();
-
-            floor.Size = new Size(formSize.Width, 32);
-            floor.Location = new Point(0, Bottom - floor.Height);
-
-            gameArea.Size = new Size(formSize.Width, ClientSize.Height - toolBar.Height - floor.Height);
-            gameArea.Location = new Point(0, toolBar.Bottom);
-
-            Block.StartPoint = new Point(
-                (int)(gameArea.Width / 2 - block.W / 2),
-                (int)(gameArea.ClientSize.Height - block.H));
-            block.Bounds = new RectangleF(Block.StartPoint, block.Size);
-
-            block.UserBounds = gameArea.ClientRectangle;
-
-            block.MagneticCore = new Point(
-                (int)(gameArea.Width / 2 - block.W / 2),
-                (int)(gameArea.Height / 2 - block.H / 2));
-
-            gravity.VXChanged += newVX =>
+            targetBlock = block;
+            if (Gravity == null || toolBar == null || gameArea == null || floor == null) return;
+            Gravity.VXChanged += newVX =>
             {
-                if (block.Gravity == Block.GravityMode.Dynamic)
+                if (targetBlock.Gravity == Block.GravityMode.Dynamic)
                     toolBar.gravityPanel.displayVX.Text = $"{newVX:F1}";
             };
-            gravity.VYChanged += newVY =>
+            Gravity.VYChanged += newVY =>
             {
-                if (block.Gravity == Block.GravityMode.Dynamic)
+                if (targetBlock.Gravity == Block.GravityMode.Dynamic)
                     toolBar.gravityPanel.displayVY.Text = $"{newVY:F1}";
             };
 
-            gravity.Redraw += () =>
+            Gravity.Redraw += () =>
             {
-                if (block.Gravity != Block.GravityMode.Dynamic)
+                if (targetBlock.Gravity != Block.GravityMode.Dynamic)
                 {
                     toolBar.gravityPanel.displayVX.Text = "";
                     toolBar.gravityPanel.displayVY.Text = "";
                 }
                 gameArea.Invalidate();
             };
+        }
+
+        public Area(Form1 mainForm, Gravity gravity)
+        {
+            if (targetBlock == null) targetBlock = mainForm.activeBlock;
+            Gravity = gravity;
+
+            toolBar = new ToolbarPanel(mainForm, gravity);  
+            gameArea = new GameArea(mainForm.blocks);
+            floor = new Floor();
+
+            Controls.Add(toolBar);
+            Controls.Add(gameArea);
+            Controls.Add(floor);
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+
+            if (toolBar == null || gameArea == null || floor == null) return;
+
+            toolBar.Size = new Size(ClientSize.Width, toolBar.ClientSize.Height);
+            toolBar.Location = new Point();
+
+            floor.Size = new Size(ClientSize.Width, 32);
+            floor.Location = new Point(0, ClientSize.Height - floor.ClientSize.Height);
+
+            gameArea.Size = new Size(ClientSize.Width, ClientSize.Height - toolBar.ClientSize.Height - floor.ClientSize.Height);
+            gameArea.Location = new Point(0, toolBar.ClientSize.Height);
         }
     }
 }

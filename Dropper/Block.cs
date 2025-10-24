@@ -1,20 +1,23 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace Dropper
 {
     public class Block
     {
-        public RectangleF Bounds { get; set; }
-        public SizeF Size = new Size(64, 64);
+        public RectangleF Bounds { get; set; } = new RectangleF(PointF.Empty, new SizeF(64, 64));
+        public PointF Location => Bounds.Location;
+        public SizeF Size => Bounds.Size;
 
-        public bool MouseDragging { get; set; }
+        public bool Dragging { get; set; }
+        public Action RedrawArea { get; set; }
         public Rectangle UserBounds { get; set; }
 
-        public Color? Color { get; set; } = QOL.RandomColor();
-        public Color? BorderColor { get; set; } = QOL.RandomColor();
+        public Color? Color { get; set; } = System.Drawing.Color.DarkSlateBlue;
+        public Color? BorderColor { get; set; } = System.Drawing.Color.RoyalBlue;
 
-        public float BorderWidth { get; set; } = 1f;
+        public float BorderWidth { get; set; } = 3f;
 
         public float Weight { get; set; } = 100.0f;
         public static Point StartPoint { get; set; }
@@ -27,6 +30,8 @@ namespace Dropper
         public float TerminalVelocity { get; set; }
 
         public float Restituion { get; set; } = 0.70f;
+
+        public bool On { get; set; } = false;
 
         public float X => Bounds.X;
         public float Y => Bounds.Y;
@@ -47,9 +52,9 @@ namespace Dropper
         public enum GravityMode { Linear, Dynamic, Magnetic }
         public GravityMode Gravity { get; set; } = GravityMode.Dynamic;
 
-        public void ConstrainToArea()
+        public void Constrain()
         {
-            if (UserBounds == null) return;
+            if (UserBounds == Rectangle.Empty) QOL.WriteOut("what? how");
             float nx = X;
             float ny = Y;
             bool bouncingX = false;
@@ -100,44 +105,7 @@ namespace Dropper
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
 
-        public void Drag(Control parent)
-        {
-            MouseDragging = false;
-            PointF cursorPos = Cursor.Position;
-
-            parent.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left && Bounds.Contains(ev.Location))
-                {
-                    MouseDragging = true;
-                    cursorPos = Cursor.Position;
-                    ResetVelocity();
-                }
-            };
-
-            parent.MouseUp += (s, ev) => MouseDragging = false;
-
-            parent.MouseMove += (s, ev) =>
-            {
-                if (MouseDragging)
-                {
-                    float deltaX = Cursor.Position.X - cursorPos.X;
-                    float deltaY = Cursor.Position.Y - cursorPos.Y;
-
-                    Bounds = new RectangleF(
-                        new PointF(
-                            X + deltaX,
-                            Y + deltaY),
-                        Bounds.Size);
-
-                    cursorPos = Cursor.Position;
-                    ConstrainToArea();
-                    parent.Invalidate();
-                }
-            };
-        }
-
-        public float UpdateTerminalVelocity() => TerminalVelocity = (Area * Weight) / 16;
+        public float UpdateTerminalVelocity() => TerminalVelocity = (Area * Math.Abs(Weight)) / 128;
 
         public void ResetVelocity()
         {
@@ -149,5 +117,31 @@ namespace Dropper
 
         public enum SpecialMode { Bounce, Split, Crack }
         public SpecialMode Special { get; set; } = SpecialMode.Bounce;
+
+        public void DoubleSize()
+        {
+            float nw = W * 2f;
+            float nh = H * 2f;
+            float nx = X - W / 2f;
+            float ny = Y - H / 2f;
+            Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
+            RedrawArea?.Invoke();
+        }
+
+        public void HalveSize()
+        {
+            float nw = W / 2f;
+            float nh = H / 2f;
+            float nx = X + nw / 2f;
+            float ny = Y + nh / 2f;
+            Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
+            RedrawArea?.Invoke();
+        }
+
+        public void Toggle()
+        {
+            On = !On;
+            BorderColor = On ? System.Drawing.Color.RoyalBlue : System.Drawing.Color.DarkGray;
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -56,8 +57,8 @@ namespace Dropper
             }
             if (block.Weight < 0)
             {
-                block.VX = Math.Min(block.VX, -block.TerminalVelocity);
-                block.VY = Math.Min(block.VY, -block.TerminalVelocity);
+                block.VX = Math.Max(block.VX, -block.TerminalVelocity);
+                block.VY = Math.Max(block.VY, -block.TerminalVelocity);
             }
 
             block.Bounds = new RectangleF(
@@ -89,22 +90,33 @@ namespace Dropper
                 block.Size);
         }
 
-        public void CheckGravity(Block block)
+        public void Start(List<Block> blocks)
         {
             Timer.Tick += (s, ev) =>
             {
-                if (!block.MouseDragging)
-                {
-                    Apply(block);
-                    block.ConstrainToArea();
+                if (blocks == null || blocks.Count == 0) return;
 
-                    if (block.Gravity == Block.GravityMode.Dynamic)
+                foreach (Block block in blocks)
+                {
+                    if (!block.Dragging && block.On)
                     {
-                        VXChanged?.Invoke(block.VX);
-                        VYChanged?.Invoke(block.VY);
+                        Apply(block);
+                        block.Constrain();
                     }
-                    Redraw?.Invoke();
                 }
+
+                Block active = blocks.Find(x => x.On);
+                if (active != null && active.Gravity == Block.GravityMode.Dynamic)
+                {
+                    VXChanged?.Invoke(active.VX);
+                    VYChanged?.Invoke(active.VY);
+                }
+                else
+                {
+                    VXChanged?.Invoke(0f);
+                    VYChanged?.Invoke(0f);
+                }
+                    Redraw?.Invoke();
             };
             Timer.Start();
         }

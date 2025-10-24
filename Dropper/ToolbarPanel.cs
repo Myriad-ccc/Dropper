@@ -1,32 +1,38 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace Dropper
 {
     public class ToolbarPanel : CustomPanel
     {
+        private readonly Form1 mainForm;
+
         public WeightPanel weightPanel;
         public WeightSlider weightSlider;
         public ExpandedWeightMenu expandedWeightMenu;
         public PivotPanel pivotPanel;
         public GravityPanel gravityPanel;
 
-        public ToolbarPanel(Block block, Gravity gravity)
+        public ToolbarPanel(Form1 form, Gravity gravity)
         {
+            mainForm = form;
+
             Height = 98; //96
             BackColor = QOL.RGB(50);
 
-            weightPanel = new WeightPanel(block);
-            weightSlider = new WeightSlider(block);
-            expandedWeightMenu = new ExpandedWeightMenu(block);
-            pivotPanel = new PivotPanel(block, gravity);
-            gravityPanel = new GravityPanel(block);
+            weightPanel = new WeightPanel(form.activeBlock);
+            weightSlider = new WeightSlider(form.activeBlock);
+            //expandedWeightMenu = new ExpandedWeightMenu(form.activeBlock);
+            pivotPanel = new PivotPanel(form.activeBlock, gravity);
+            gravityPanel = new GravityPanel(form.activeBlock);
 
             Controls.Add(weightPanel);
             Controls.Add(weightSlider);
-            Controls.Add(expandedWeightMenu);
+            //Controls.Add(expandedWeightMenu);
             Controls.Add(pivotPanel);
             Controls.Add(gravityPanel);
+
+            mainForm.ActiveBlockChanged += UpdateReference;
+            UpdateReference(mainForm.activeBlock);
 
             QOL.ClampControlWidth(weightPanel);
             weightPanel.Location = new Point();
@@ -39,36 +45,33 @@ namespace Dropper
             void OnWeightChanged(float newWeight)
             {
                 if (QOL.ValidFloat32(newWeight))
-                    block.Weight = newWeight;
+                    mainForm.activeBlock.Weight = newWeight;
                 else expandedWeightMenu.ResetWeight += () =>
                 {
-                    block.Weight = weightPanel.originalWeight;
-                    weightPanel.weightDisplay.Text = $"{block.Weight:F1}";
+                    mainForm.activeBlock.Weight = weightPanel.originalWeight;
+                    weightPanel.weightDisplay.Text = $"{mainForm.activeBlock.Weight:F1}";
                 };
 
-                if (block.Weight > -100 && block.Weight < 100)
+                if (mainForm.activeBlock.Weight > -100 && mainForm.activeBlock.Weight < 100)
                     weightPanel.weightDisplay.Text = $"{newWeight:F1}";
-                else if (block.Weight == (float)Math.PI)
-                    weightPanel.weightDisplay.Text = $"{Math.PI:F5}";
-                else if (block.Weight == (float)Math.E)
-                    weightPanel.weightDisplay.Text = $"{Math.E:F5}";
                 else
                     weightPanel.weightDisplay.Text = $"{newWeight:F0}";
             }
 
-            QOL.ClampControlWidth(weightSlider);
-            QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
+            QOL.Align.Bottom.Center(weightSlider, weightPanel);
+            weightSlider.Width = weightPanel.Width;
             weightSlider.WeightChanged += OnWeightChanged;
+            weightSlider.BringToFront();
 
-            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
-            expandedWeightMenu.BringToFront();
-            expandedWeightMenu.MouseClick += (s, ev) => weightSlider.Visible = false;
-            expandedWeightMenu.WeightChanged += OnWeightChanged;
-            expandedWeightMenu.ResetWeight += () =>
-            {
-                block.Weight = weightPanel.originalWeight;
-                weightPanel.weightDisplay.Text = $"{block.Weight:F1}";
-            };
+            //QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
+            ////expandedWeightMenu.BringToFront();
+            //expandedWeightMenu.MouseClick += (s, ev) => weightSlider.Visible = false;
+            //expandedWeightMenu.WeightChanged += OnWeightChanged;
+            //expandedWeightMenu.ResetWeight += () =>
+            //{
+            //    mainForm.activeBlock.Weight = weightPanel.originalWeight;
+            //    weightPanel.weightDisplay.Text = $"{mainForm.activeBlock.Weight:F1}";
+            //};
 
             QOL.ClampControlWidth(pivotPanel);
             QOL.Align.Right(pivotPanel, weightPanel, 16);
@@ -76,6 +79,15 @@ namespace Dropper
 
             QOL.ClampControlWidth(gravityPanel, 40);
             QOL.Align.Right(gravityPanel, pivotPanel, 16);
+        }
+
+        private void UpdateReference(Block block)
+        {
+            weightPanel.SetActiveBlock(block);
+            weightSlider.SetActiveBlock(block);
+            //expandedWeightMenu.SetActiveBlock(block);
+            pivotPanel.SetActiveBlock(block);
+            gravityPanel.SetActiveBlock(block);
         }
     }
 }

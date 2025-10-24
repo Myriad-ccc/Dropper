@@ -6,21 +6,23 @@ namespace Dropper
 {
     public class WeightSlider : CustomPanel
     {
-        private readonly Block Block;
+        private Block targetBlock;
         public TrackBarOverlayed bar;
 
         public event Action<float> WeightChanged;
 
+        public void SetActiveBlock(Block block) => targetBlock = block;
+
         public WeightSlider(Block block)
         {
-            Block = block;
+            if (targetBlock == null) targetBlock = block;
+
             BuildWeightSlider();
         }
 
         private void BuildWeightSlider()
         {
-            Width = 144;
-
+            Height = 20;
             BackColor = Color.Transparent;
             DoubleBuffered = true;
             Visible = true;
@@ -29,7 +31,8 @@ namespace Dropper
             {
                 TabStop = false,
                 BackColor = QOL.RGB(50),
-                Size = new Size(ClientSize.Width, 20),
+                Dock = DockStyle.Fill,
+                Height = 20,
                 TickStyle = TickStyle.None
             };
             Controls.Add(bar);
@@ -42,10 +45,10 @@ namespace Dropper
             void UpdateBar()
             {
                 if (positive)
-                    Block.Weight = barValues[bar.Value];
+                    targetBlock.Weight = barValues[bar.Value];
                 else
-                    Block.Weight = -barValues[bar.Value];
-                WeightChanged?.Invoke(Block.Weight);
+                    targetBlock.Weight = -barValues[bar.Value];
+                WeightChanged?.Invoke(targetBlock.Weight);
             }
 
             var timer = new Timer() { Interval = 1000 };
@@ -73,7 +76,7 @@ namespace Dropper
 
                     UpdateBar();
                     bar.Invalidate();
-
+                        
                     timer.Start();
                 }
             };
