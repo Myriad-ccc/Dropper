@@ -121,9 +121,9 @@ namespace Dropper
 
         public static class GenericControls
         {
-            public static Button Button(float? fontSize = null, string text = null, Color? forecolor = null, Size? size = null)
+            public static CustomButton Button(float? fontSize = null, string text = null, Color? forecolor = null, Size? size = null)
             {
-                return new Button()
+                return new CustomButton()
                 {
                     UseCompatibleTextRendering = true,
                     TabStop = false,

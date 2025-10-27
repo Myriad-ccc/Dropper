@@ -8,17 +8,25 @@ namespace Dropper
     {
         private readonly Random random = new Random();
 
-        private readonly Block Block;
         private readonly Gravity Gravity;
 
-        public PivotPanel(Block block, Gravity gravity)
+        private bool built;
+        private Block targetBlock;
+
+        public PivotPanel(Gravity gravity) => Gravity = gravity;
+
+        public void SetActiveBlock(Block block)
         {
-            Block = block;
-            Gravity = gravity;
-            BuildPivotPanel();
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+            // flip cards according to new current target block's pivots
         }
 
-        private void BuildPivotPanel()
+        private void Build()
         {
             ForeColor = Color.White;
             BackColor = Color.Transparent;
@@ -71,22 +79,22 @@ namespace Dropper
             var dissipateVX = new Timer() { Interval = 100 };
             dissipateVX.Tick += (s, ev) =>
             {
-                if (Math.Abs(Block.VX) <= 0.1)
+                if (Math.Abs(targetBlock.VX) <= 0.1)
                 {
                     dissipateVX.Stop();
-                    Block.VX = 0;
+                    targetBlock.VX = 0;
                 }
-                Block.VX -= Block.VX / 10;
+                targetBlock.VX -= targetBlock.VX / 10;
             };
             var dissipateVY = new Timer() { Interval = 100 };
             dissipateVY.Tick += (s, ev) =>
             {
-                if (Math.Abs(Block.VY) <= 0.1)
+                if (Math.Abs(targetBlock.VY) <= 0.1)
                 {
                     dissipateVY.Stop();
-                    Block.VY = 0;
+                    targetBlock.VY = 0;
                 }
-                Block.VY -= Block.VY / 10;
+                targetBlock.VY -= targetBlock.VY / 10;
             };
             Card.Activated = (row, col) =>
             {
@@ -110,7 +118,7 @@ namespace Dropper
                 }
             };
 
-            Button[] buttons = new Button[Height / Card.CardHeight];
+            Button[] buttons = new CustomButton[Height / Card.CardHeight];
             for (int i = 0; i < buttons.Length; i++)
             {
                 int x = i;

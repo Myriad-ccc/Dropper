@@ -37,5 +37,14 @@ namespace Dropper
             if (e.KeyCode == Keys.Left && Value != Minimum) Value--;
             if (e.KeyCode == Keys.Right && Value != Maximum) Value++;
         }
+
+        protected override bool ShowFocusCues => false;
+        protected override bool ShowKeyboardCues => false;
+
+        protected override void OnGotFocus(EventArgs e)
+        {
+            base.OnGotFocus(e);
+            Parent?.Focus();
+        }
     }
 }

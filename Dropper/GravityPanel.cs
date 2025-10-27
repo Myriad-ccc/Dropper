@@ -7,18 +7,23 @@ namespace Dropper
 {
     public class GravityPanel : CustomPanel
     {
-        private readonly Block Block;
-
         public Label displayVX, displayVY;
         private Action GravityModeUpdated;
 
-        public GravityPanel(Block block)
+        private bool built;
+        private Block targetBlock;
+
+        public void SetActiveBlock(Block block)
         {
-            Block = block;
-            BuildGravityPanel();
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
         }
 
-        private void BuildGravityPanel()
+        private void Build()
         {
             ForeColor = Color.White;
             BackColor = Color.Transparent;
@@ -33,8 +38,8 @@ namespace Dropper
             var gravityModes = Enum.GetValues(typeof(Block.GravityMode)).Cast<object>().ToArray();
 
             int gravityModeIndex = Array.IndexOf(gravityModes, Block.GravityMode.Dynamic);
-            Block.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
-            var gravityChoice = new Button()
+            targetBlock.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
+            var gravityChoice = new CustomButton()
             {
                 UseCompatibleTextRendering = true,
                 TabStop = false,
@@ -52,7 +57,7 @@ namespace Dropper
                     if (gravityModeIndex == gravityModes.Length)
                         gravityModeIndex = 0;
 
-                    Block.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
+                    targetBlock.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
                     gravityChoice.Text = gravityModes[gravityModeIndex].ToString();
                     GravityModeUpdated?.Invoke();
                 }
@@ -79,8 +84,8 @@ namespace Dropper
             var specialModes = Enum.GetValues(typeof(Block.SpecialMode)).Cast<object>().ToArray();
 
             int specialModeIndex = Array.IndexOf(specialModes, Block.SpecialMode.Bounce);
-            Block.Special = (Block.SpecialMode)specialModes[specialModeIndex];
-            var specialChoice = new Button()
+            targetBlock.Special = (Block.SpecialMode)specialModes[specialModeIndex];
+            var specialChoice = new CustomButton()
             {
                 UseCompatibleTextRendering = true,
                 TabStop = false,
@@ -89,12 +94,12 @@ namespace Dropper
                 BackColor = QOL.RGB(20),
                 Text = specialModes[specialModeIndex].ToString(),
                 AutoSize = true,
-                Visible = Block.Gravity == Block.GravityMode.Dynamic && Enabled,
+                Visible = targetBlock.Gravity == Block.GravityMode.Dynamic && Enabled,
             };
             Controls.Add(specialChoice);
             QOL.Align.Right(specialChoice, gravityChoice, 24);
             
-            GravityModeUpdated += () => specialChoice.Visible = Block.Gravity == Block.GravityMode.Dynamic && Enabled;
+            GravityModeUpdated += () => specialChoice.Visible = targetBlock.Gravity == Block.GravityMode.Dynamic && Enabled;
             specialChoice.MouseClick += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
@@ -103,7 +108,7 @@ namespace Dropper
                     if (specialModeIndex == specialModes.Length)
                         specialModeIndex = 0;
 
-                    Block.Special = (Block.SpecialMode)specialModes[specialModeIndex];
+                    targetBlock.Special = (Block.SpecialMode)specialModes[specialModeIndex];
                     specialChoice.Text = specialModes[specialModeIndex].ToString();
                 }
             };

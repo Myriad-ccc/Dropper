@@ -13,5 +13,6 @@ namespace Dropper
                 ControlStyles.OptimizedDoubleBuffer, true);
             UpdateStyles();
         }
+        protected override bool ShowFocusCues => false;
     }
 }

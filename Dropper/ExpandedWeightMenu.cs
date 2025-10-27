@@ -6,29 +6,36 @@ namespace Dropper
 {
     public class ExpandedWeightMenu : CustomPanel
     {
-        private readonly Block Block;
-
         public event Action<float> WeightChanged;
-        public event Action ResetWeight;
 
-        public ExpandedWeightMenu(Block block)
+        private bool built;
+        private Block targetBlock;
+
+        public void SetActiveBlock(Block block)
         {
-            Block = block;
-            BuildExpandedWeightMenu();
-
-            Paint += (s, ev) =>
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
             {
-                using (Pen borderPen = new Pen(QOL.RandomColor(), 1f))
-                    ev.Graphics.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 2);
-            };
+                Build();
+                built = true;
+            }
+        }
+        public ExpandedWeightMenu()
+        {
+            if (built)
+                Paint += (s, ev) =>
+                {
+                    using (Pen borderPen = new Pen(QOL.RandomColor(), 1f))
+                        ev.Graphics.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 2);
+                };
         }
 
-        private void BuildExpandedWeightMenu()
+        private void Build()
         {
             Visible = false;
             BackColor = Color.Transparent;
 
-            Button[,] buttons = new Button[6, 3];
+            Card[,] buttons = new Card[6, 3];
             Size = new Size(buttons.GetLength(0) * 24, buttons.GetLength(1) * 24);
             for (int r = 0; r < buttons.GetLength(0); r++)
             {
@@ -51,10 +58,10 @@ namespace Dropper
                                     b.Text = "2";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Math.Abs(Block.Weight) <= Math.Sqrt(float.MaxValue))
+                                        if (Math.Abs(targetBlock.Weight) <= Math.Sqrt(float.MaxValue))
                                         {
-                                            Block.Weight = (float)Math.Pow(Block.Weight, 2);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 2);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -65,10 +72,10 @@ namespace Dropper
                                     b.Text = "3";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Math.Abs(Block.Weight) <= Math.Pow(float.MaxValue, 1.0f / 3.0f))
+                                        if (Math.Abs(targetBlock.Weight) <= Math.Pow(float.MaxValue, 1.0f / 3.0f))
                                         {
-                                            Block.Weight = (float)Math.Pow(Block.Weight, 3);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 3);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -78,8 +85,8 @@ namespace Dropper
                                     b.Text = "||";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = Block.Weight * Math.Sign(-1);
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        targetBlock.Weight = targetBlock.Weight * Math.Sign(-1);
+                                        WeightChanged?.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 3:
@@ -88,10 +95,10 @@ namespace Dropper
                                     b.Text = "!";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Block.Weight == (int)Block.Weight && Block.Weight >= 0 && Block.Weight <= 16)
+                                        if (targetBlock.Weight == (int)targetBlock.Weight && targetBlock.Weight >= 0 && targetBlock.Weight <= 16)
                                         {
-                                            Block.Weight = QOL.Factorial((int)Block.Weight);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = QOL.Factorial((int)targetBlock.Weight);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -105,8 +112,8 @@ namespace Dropper
                                     var timer = new Timer() { Interval = 1000 };
                                     timer.Tick += (s, ev) =>
                                     {
-                                        Block.Weight = DateTime.Now.Second;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        targetBlock.Weight = DateTime.Now.Second;
+                                        WeightChanged?.Invoke(targetBlock.Weight);
                                     };
                                     b.MouseClick += (s, ev) =>
                                     {
@@ -151,10 +158,10 @@ namespace Dropper
                                     b.Text = "√";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Block.Weight > 0)
+                                        if (targetBlock.Weight > 0)
                                         {
-                                            Block.Weight = (float)Math.Sqrt(Block.Weight);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = (float)Math.Sqrt(targetBlock.Weight);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -165,10 +172,10 @@ namespace Dropper
                                     b.Text = "∛";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Block.Weight > 0)
+                                        if (targetBlock.Weight > 0)
                                         {
-                                            Block.Weight = (float)Math.Pow(Block.Weight, 1.0f / 3.0f);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 1.0f / 3.0f);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -178,8 +185,8 @@ namespace Dropper
                                     b.Text = "π";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = (float)Math.PI;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        targetBlock.Weight = (float)Math.PI;
+                                        WeightChanged?.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 3:
@@ -189,9 +196,9 @@ namespace Dropper
                                     b.Text = "/";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Block.Weight != 0)
-                                            Block.Weight = 1 / Block.Weight;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        if (targetBlock.Weight != 0)
+                                            targetBlock.Weight = 1 / targetBlock.Weight;
+                                        WeightChanged?.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 4:
@@ -205,12 +212,12 @@ namespace Dropper
                                     var timer = new Timer() { Interval = updateRate };
                                     timer.Tick += (s, ev) =>
                                     {
-                                        if (Block.MouseDragging)
+                                        if (targetBlock.MouseDragging)
                                         {
                                             secondsDragged += updateRate / 1000.0f;
                                             float multiplier = Math.Max(1.0f, secondsDragged / 2.0f);
-                                            Block.Weight += (float)(5.0f / (1000.0f / updateRate) * Math.Pow(multiplier, 3));
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight += (float)(5.0f / (1000.0f / updateRate) * Math.Pow(multiplier, 3));
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                         else
                                             secondsDragged = 0.0f;
@@ -262,10 +269,10 @@ namespace Dropper
                                     b.Text = "ln";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Block.Weight > 0)
+                                        if (targetBlock.Weight > 0)
                                         {
-                                            Block.Weight = (float)Math.Log(Block.Weight);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = (float)Math.Log(targetBlock.Weight);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -276,10 +283,10 @@ namespace Dropper
                                     b.Text = "log";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        if (Block.Weight > 0)
+                                        if (targetBlock.Weight > 0)
                                         {
-                                            Block.Weight = (float)Math.Log10(Block.Weight);
-                                            WeightChanged?.Invoke(Block.Weight);
+                                            targetBlock.Weight = (float)Math.Log10(targetBlock.Weight);
+                                            WeightChanged?.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -290,8 +297,8 @@ namespace Dropper
                                     b.Text = "e";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        Block.Weight = (float)Math.E;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        targetBlock.Weight = (float)Math.E;
+                                        WeightChanged?.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 3:
@@ -301,12 +308,12 @@ namespace Dropper
                                     b.Text = "Σ";
                                     b.MouseClick += (s, ev) =>
                                     {
-                                        string blockWeight = Math.Abs(Block.Weight).ToString();
+                                        string blockWeight = Math.Abs(targetBlock.Weight).ToString();
                                         float sum = 0f;
                                         foreach (var ch in blockWeight)
                                             sum += (float)char.GetNumericValue(ch);
-                                        Block.Weight = QOL.ValidFloat32(sum) ? sum : Block.Weight;
-                                        WeightChanged?.Invoke(Block.Weight);
+                                        targetBlock.Weight = QOL.ValidFloat32(sum) ? sum : targetBlock.Weight;
+                                        WeightChanged?.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 4:

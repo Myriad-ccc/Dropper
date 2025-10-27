@@ -1,35 +1,36 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
 {
     public class WeightPanel : CustomPanel
     {
-        private readonly Block Block;
         public ClickFilter WeightDisplayFilter;
 
         public TextBox weightDisplay;
-        public float originalWeight;
 
         public Button collapsableMenu;
         public event EventHandler CollapseExpandedWeightPanel;
 
-        public WeightPanel(Block block)
+        private bool built;
+        private Block targetBlock;
+
+        public void SetActiveBlock(Block block)
         {
-            Block = block;
-            originalWeight = block.Weight;
-            BuildWeightPanel();
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+            else            
+                UpdateWeightDisplay();            
         }
 
-        public void UpdateWeightDisplay()
-        {
-            if (weightDisplay != null)
-                weightDisplay.Text = $"{Block.Weight:F1}";
-        }
-
-        private void BuildWeightPanel()
+        public void UpdateWeightDisplay() => weightDisplay.Text = $"{targetBlock.Weight:F1}";
+        
+        private void Build()
         {
             ForeColor = Color.Transparent;
             BackColor = QOL.RGB(35);
@@ -49,23 +50,22 @@ namespace Dropper
                 BackColor = QOL.RGB(100),
                 ForeColor = Color.White,
                 Font = new Font(QOL.VCROSDMONO, 17f),
-                Text = $"{Block.Weight:F1}",
+                Text = $"{targetBlock.Weight:F1}",
                 Width = 92,
-                Location = new Point()
             };
             weightDisplay.TextChanged += (s, ev) =>
             {
                 if (float.TryParse(weightDisplay.Text, out float newWeight))
-                    Block.Weight = newWeight;
-                else Block.Weight = originalWeight;
+                    targetBlock.Weight = newWeight;
+                else targetBlock.Weight = targetBlock.OriginalWeight;
             };
             weightDisplay.LostFocus += (s, ev) =>
             {
                 if (string.IsNullOrEmpty(weightDisplay.Text)
                 || !float.TryParse(weightDisplay.Text, out _))
                 {
-                    weightDisplay.Text = originalWeight.ToString("F1");
-                    Block.Weight = originalWeight;
+                    targetBlock.Weight = targetBlock.OriginalWeight;
+                    UpdateWeightDisplay();
                 }
             };
             Controls.Add(weightDisplay);
@@ -77,8 +77,8 @@ namespace Dropper
             Controls.Add(resetWeight);
             resetWeight.MouseClick += (s, ev) =>
             {
-                Block.Weight = originalWeight;
-                weightDisplay.Text = $"{Block.Weight:F1}";
+                targetBlock.Weight = targetBlock.OriginalWeight;
+                UpdateWeightDisplay();
             };
 
             collapsableMenu = QOL.GenericControls.Button(12f, "+", Color.White);

@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace Dropper
 {
-    public class Card : Button
+    public class Card : CustomButton
     {
         public bool On { get; set; } = false;
         public static int CardWidth { get; set; } = 32;
