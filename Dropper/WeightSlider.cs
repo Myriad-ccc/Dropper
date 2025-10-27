@@ -25,8 +25,7 @@ namespace Dropper
 
         private void Build()
         {
-            Width = 144;
-
+            Height = 20;
             BackColor = Color.Transparent;
             DoubleBuffered = true;
             Visible = true;
@@ -35,7 +34,8 @@ namespace Dropper
             {
                 TabStop = false,
                 BackColor = QOL.RGB(50),
-                Size = new Size(ClientSize.Width, 20),
+                Dock = DockStyle.Fill,
+                Height = 20,
                 TickStyle = TickStyle.None
             };
             Controls.Add(bar);
@@ -79,7 +79,7 @@ namespace Dropper
 
                     UpdateBar();
                     bar.Invalidate();
-
+                        
                     timer.Start();
                 }
             };

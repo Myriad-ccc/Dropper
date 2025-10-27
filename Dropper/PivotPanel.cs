@@ -30,8 +30,6 @@ namespace Dropper
         {
             ForeColor = Color.White;
             BackColor = Color.Transparent;
-            Width = 1024;
-            Height = 100;
             Paint += (s, ev) =>
                {
                    using (var pen = new Pen(BackColor, 1f))

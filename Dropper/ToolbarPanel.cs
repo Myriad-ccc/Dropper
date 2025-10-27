@@ -6,6 +6,8 @@ namespace Dropper
 {
     public class ToolbarPanel : CustomPanel
     {
+        private readonly Form1 mainForm;
+
         public WeightPanel weightPanel;
         public WeightSlider weightSlider;
         public ExpandedWeightMenu expandedWeightMenu;
@@ -38,7 +40,7 @@ namespace Dropper
 
             Controls.Add(weightPanel);
             Controls.Add(weightSlider);
-            Controls.Add(expandedWeightMenu);
+            //Controls.Add(expandedWeightMenu);
             Controls.Add(pivotPanel);
             Controls.Add(gravityPanel);
 
@@ -71,6 +73,7 @@ namespace Dropper
             }
 
             weightSlider.WeightChanged += OnWeightChanged;
+            weightSlider.BringToFront();
 
             expandedWeightMenu.BringToFront();
             expandedWeightMenu.MouseClick += (s, ev) => weightSlider.Visible = false;
@@ -93,6 +96,15 @@ namespace Dropper
 
             QOL.ClampControlWidth(gravityPanel, 40);
             QOL.Align.Right(gravityPanel, pivotPanel, 16);
+        }
+
+        private void UpdateReference(Block block)
+        {
+            weightPanel.SetActiveBlock(block);
+            weightSlider.SetActiveBlock(block);
+            //expandedWeightMenu.SetActiveBlock(block);
+            pivotPanel.SetActiveBlock(block);
+            gravityPanel.SetActiveBlock(block);
         }
     }
 }

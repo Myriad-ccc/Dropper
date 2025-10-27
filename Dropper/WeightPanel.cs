@@ -34,8 +34,6 @@ namespace Dropper
         {
             ForeColor = Color.Transparent;
             BackColor = QOL.RGB(35);
-            Width = 264;
-            Height = 24;
             Paint += (s, ev) =>
             {
                 using (var pen = new Pen(BackColor, 1f))

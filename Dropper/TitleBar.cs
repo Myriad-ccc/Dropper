@@ -73,17 +73,17 @@ namespace Dropper
 
         public void Drag()
         {
-            bool MouseDragging = false;
+            bool Dragging = false;
             Point cursorPos = Cursor.Position;
 
             MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
                 {
-                    MouseDragging = true;
+                    Dragging = true;
                     cursorPos = Cursor.Position;
                 }
-                if (ev.Button == MouseButtons.Right && !MouseDragging)
+                if (ev.Button == MouseButtons.Right && !Dragging)
                 {
                     TitleColor = QOL.RandomColor();
                     ShadowTitleColor = QOL.RandomColor();
@@ -91,11 +91,11 @@ namespace Dropper
                 }
             };
 
-            MouseUp += (s, ev) => MouseDragging = false;
+            MouseUp += (s, ev) => Dragging = false;
 
             MouseMove += (s, ev) =>
             {
-                if (MouseDragging)
+                if (Dragging)
                 {
                     int deltaX = Cursor.Position.X - cursorPos.X;
                     int deltaY = Cursor.Position.Y - cursorPos.Y;

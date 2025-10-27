@@ -17,18 +17,18 @@ namespace Dropper
 
             Gravity.VXChanged += newVX =>
             {
-                if (block.Gravity == Block.GravityMode.Dynamic)
+                if (targetBlock.Gravity == Block.GravityMode.Dynamic)
                     toolBar.gravityPanel.displayVX.Text = $"{newVX:F1}";
             };
             Gravity.VYChanged += newVY =>
             {
-                if (block.Gravity == Block.GravityMode.Dynamic)
+                if (targetBlock.Gravity == Block.GravityMode.Dynamic)
                     toolBar.gravityPanel.displayVY.Text = $"{newVY:F1}";
             };
 
             Gravity.Redraw += () =>
             {
-                if (block.Gravity != Block.GravityMode.Dynamic)
+                if (targetBlock.Gravity != Block.GravityMode.Dynamic)
                 {
                     toolBar.gravityPanel.displayVX.Text = "";
                     toolBar.gravityPanel.displayVY.Text = "";
