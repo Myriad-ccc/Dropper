@@ -33,10 +33,10 @@ namespace Dropper
             Width = 1024;
             Height = 100;
             Paint += (s, ev) =>
-               {
-                   using (var pen = new Pen(BackColor, 1f))
-                       ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
-               };
+            {
+                using (var pen = new Pen(BackColor, 1f))
+                    ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            };
 
             var pivots = new CustomPanel
             {

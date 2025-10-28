@@ -41,7 +41,7 @@ namespace Dropper
             if (num == 0 || num == 1) return 1;
             return num *= Factorial(num - 1);
         }
-        
+
         public static class Align
         {
             private static int CheckGap(int? gap) => gap ?? 0;

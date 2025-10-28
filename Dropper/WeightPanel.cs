@@ -24,12 +24,12 @@ namespace Dropper
                 Build();
                 built = true;
             }
-            else            
-                UpdateWeightDisplay();            
+            else
+                UpdateWeightDisplay();
         }
 
         public void UpdateWeightDisplay() => weightDisplay.Text = $"{targetBlock.Weight:F1}";
-        
+
         private void Build()
         {
             ForeColor = Color.Transparent;

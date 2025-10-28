@@ -13,10 +13,12 @@ namespace Dropper
         public bool MouseDragging { get; set; }
         public Rectangle UserBounds { get; set; }
 
-        public Color Color { get; set; } = QOL.RandomColor();
-        public Color BorderColor { get; set; } = Color.RoyalBlue;
+        public Color ActiveColor { get; set; } = QOL.RGB(50);
+        public Color InactiveColor { get; set; } = QOL.RGB(50);
+        public Color ActiveBorderColor { get; set; } = Color.IndianRed;
+        public Color InactiveBorderColor { get; set; } = Color.Black;
 
-        public float BorderWidth { get; set; } = 3f;
+        public float BorderWidth => (float)(Math.Sqrt(Area) / 32);
 
         public float Weight { get; set; } = 100.0f;
         public float OriginalWeight { get; set; }
@@ -41,12 +43,6 @@ namespace Dropper
         public float Bottom => Bounds.Bottom;
 
         public Block() { }
-        public Block(RectangleF bounds, Color color, Color borderColor)
-        {
-            Bounds = bounds;
-            Color = color;
-            BorderColor = borderColor;
-        }
 
         public enum GravityMode { Linear, Dynamic, Magnetic }
         public GravityMode Gravity { get; set; } = GravityMode.Dynamic;

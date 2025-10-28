@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -6,28 +7,45 @@ namespace Dropper
 {
     public class GameArea : CustomPanel
     {
+        public event Action<Block> ActiveBlockChanged;
+        private bool debug = false;
+
         public GameArea(List<Block> blocks)
         {
             BackColor = QOL.RGB(20);
             Paint += (s, ev) =>
             {
+                var g = ev.Graphics;
+
                 foreach (var block in blocks)
                 {
-                    block.BorderColor = block.Active ? Color.RoyalBlue : Color.DarkGray;
-                    using (var blockBrush = new SolidBrush(block.Color))
-                        ev.Graphics.FillRectangle(
+                    using (var blockBrush = new SolidBrush(block.Active ? block.ActiveColor : block.InactiveColor))
+                        g.FillRectangle(
                             blockBrush,
                             block.Bounds.X,
                             block.Bounds.Y,
                             block.Bounds.Width,
                             block.Bounds.Height);
-                    using (var borderPen = new Pen(block.BorderColor, (float)block.BorderWidth))
-                        ev.Graphics.DrawRectangle(
+                    using (var borderPen = new Pen(block.Active ? block.ActiveBorderColor : block.InactiveBorderColor, (float)block.BorderWidth))
+                        g.DrawRectangle(
                             borderPen,
                             block.Bounds.X,
                             block.Bounds.Y,
                             block.Bounds.Width,
                             block.Bounds.Height);
+                    if (debug)
+                        using (var brush = new SolidBrush(Color.IndianRed))
+                        {
+                            var font = new Font(QOL.VCROSDMONO, 20f);
+                            var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                            g.DrawString(
+                                $"{block.Weight:F0}",
+                                new Font(QOL.VCROSDMONO, 16f),
+                                brush,
+                                new PointF(
+                                    block.Left + size.Width / 8,
+                                    block.Top + size.Height / 2));
+                        }
                 }
             };
             Drag(blocks);
@@ -47,6 +65,7 @@ namespace Dropper
                         if (blocks[i].Bounds.Contains(ev.Location))
                         {
                             clicked = blocks[i];
+                            ActiveBlockChanged?.Invoke(blocks[i]);
                             break;
                         }
                     }

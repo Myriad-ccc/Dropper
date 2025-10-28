@@ -7,6 +7,7 @@ namespace Dropper
         public CustomPanel()
         {
             DoubleBuffered = true;
+            TabStop = false;
             SetStyle(
                 ControlStyles.UserPaint |
                 ControlStyles.AllPaintingInWmPaint |

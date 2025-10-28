@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace Dropper
 {
-    public partial class Form1 : Form
+    public partial class Form1 : Form //
     {
         public readonly List<Block> blocks = new List<Block>();
         private readonly Gravity gravity = new Gravity();
@@ -13,16 +13,18 @@ namespace Dropper
         private TitleBar titleBar;
         private Area area;
 
-        private Block activeBlock = null;
-        public Block ActiveBlock
+        private Block targetBlock = null;
+        public Block TargetBlock
         {
-            get => activeBlock;
+            get => targetBlock;
             set
             {
-                if (activeBlock != value)
+                if (targetBlock != value)
                 {
-                    activeBlock = value;
-                    OnBlockChanged(value);
+                    targetBlock.Active = false;
+                    targetBlock = value;
+                    targetBlock.Active = true;
+                    area.SetActiveBlock(value);
                 }
             }
         }
@@ -32,14 +34,25 @@ namespace Dropper
         private void Form1_Load(object sender, EventArgs e)
         {
             ConfigureForm();
-            AddBlock();
+            LoadArea();
+            AddBlock(setActive: true);
+            area.gameArea.ActiveBlockChanged += block => TargetBlock = block; //area.SetActiveBlock(block);
+            HoodooVoodooBlockMagic();
+            gravity.Start(blocks);
+        }
 
-            KeyDown += (s, ev) =>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Enter)
             {
-                if (ev.KeyCode == Keys.Enter)
-                    AddBlock();
-            };
+                AddBlock(setActive: false);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
 
+        private void HoodooVoodooBlockMagic()
+        {
             bool spaceDown = false;
             bool shiftDown = false;
             bool eventResolved = false;
@@ -53,14 +66,16 @@ namespace Dropper
                     eventResolved = true;
                     if (ev.Shift)
                     {
-                        if (ActiveBlock.W / 2 >= 2 && ActiveBlock.H / 2 >= 2)
-                            ActiveBlock.HalveSize();
+                        if (TargetBlock.W / 2 >= 2 && TargetBlock.H / 2 >= 2)
+                            targetBlock.HalveSize();
                     }
                     else
-                        if (ActiveBlock.W <= area.gameArea.Width / 2 && ActiveBlock.H <= area.gameArea.Height / 2)
-                        ActiveBlock.DoubleSize();
+                        if (TargetBlock.W <= area.gameArea.Width / 2 && TargetBlock.H <= area.gameArea.Height / 2)
+                        TargetBlock.DoubleSize();
                     area.gameArea.Invalidate();
                 }
+                if (ev.KeyCode == Keys.Back)
+                    RemoveBlock();
             };
 
             KeyUp += (s, ev) =>
@@ -68,39 +83,38 @@ namespace Dropper
                 if (ev.KeyCode == Keys.Space)
                     eventResolved = false;
             };
-
-            gravity.Start(blocks);
         }
 
-        private void AddBlock()
+        private void LoadArea()
+        {
+            area = new Area
+            {
+                Size = new Size(ClientSize.Width, ClientSize.Height - titleBar.Height),
+                Location = new Point(0, titleBar.Height)
+            };
+            area.Build(blocks, gravity);
+            Controls.Add(area);
+        }
+
+        private void AddBlock(bool? setActive = null)
         {
             Block newBlock = new Block();
             blocks.Add(newBlock);
-            newBlock.OriginalWeight = newBlock.Weight;
-            ActiveBlock = newBlock;
-        }
-        private void OnBlockChanged(Block block)
-        {
-            if (area == null)
+            ConfigureBlock(newBlock);
+
+            if (setActive == true)
             {
-                area = new Area
-                {
-                    Size = new Size(ClientSize.Width, ClientSize.Height - titleBar.Height),
-                    Location = new Point(0, titleBar.Height)
-                };
-                area.Build(blocks, gravity);
-                Controls.Add(area);
+                targetBlock = newBlock;
+                TargetBlock = newBlock;
+                area.SetActiveBlock(newBlock);
             }
+        }
 
-            ConfigureBlock(block);
-            area.SetActiveBlock(block);
-
-            foreach (var b in blocks)
-                if (b.Active)
-                    b.Active = false;
-            block.Active = true;
-
-            area.gameArea.Invalidate();
+        private void RemoveBlock()
+        {
+            if (blocks.Count < 2) return;
+            blocks.Remove(TargetBlock);
+            TargetBlock = blocks[blocks.Count - 1];
         }
 
         private void ConfigureForm()
@@ -113,11 +127,7 @@ namespace Dropper
             DoubleBuffered = true;
             CenterToScreen();
 
-            titleBar = new TitleBar
-            {
-                Width = this.Width,
-                Height = 64,
-            };
+            titleBar = new TitleBar(new Size(Width, 64));
             Controls.Add(titleBar);
 
             FormClosing += (s, ev) =>
@@ -128,13 +138,15 @@ namespace Dropper
         }
         private void ConfigureBlock(Block block)
         {
-            if (area == null || area.gameArea == null) return;
+            if (area == null || area.gameArea == null) QOL.WriteOut("idiot");
+
+            block.OriginalWeight = block.Weight;
+            block.UserBounds = area.gameArea.ClientRectangle;
+
             Block.StartPoint = new Point(
                 (int)(area.gameArea.Width / 2 - block.W / 2),
                 (int)(area.gameArea.ClientSize.Height - block.H));
             block.Bounds = new RectangleF(Block.StartPoint, block.Size);
-
-            block.UserBounds = area.gameArea.ClientRectangle;
 
             block.MagneticCore = new Point(
                 (int)(area.gameArea.Width / 2 - block.W / 2),

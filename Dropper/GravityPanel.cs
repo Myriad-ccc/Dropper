@@ -98,7 +98,7 @@ namespace Dropper
             };
             Controls.Add(specialChoice);
             QOL.Align.Right(specialChoice, gravityChoice, 24);
-            
+
             GravityModeUpdated += () => specialChoice.Visible = targetBlock.Gravity == Block.GravityMode.Dynamic && Enabled;
             specialChoice.MouseClick += (s, ev) =>
             {

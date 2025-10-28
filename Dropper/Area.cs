@@ -14,6 +14,7 @@ namespace Dropper
         public void SetActiveBlock(Block block)
         {
             toolBar.SetActiveBlock(block);
+            gameArea.Invalidate();
 
             Gravity.VXChanged += newVX =>
             {

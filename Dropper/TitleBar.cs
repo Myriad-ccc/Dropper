@@ -11,8 +11,9 @@ namespace Dropper
 
         private bool built = false;
 
-        public TitleBar()
+        public TitleBar(Size size)
         {
+            Size = size;
             BackColor = QOL.RGB(35);
             Drag();
         }
