@@ -33,6 +33,9 @@ namespace Dropper
 
         public float Restituion { get; set; } = 0.70f;
 
+        public bool CanBounce { get; set; } = true;
+        public int Cracks { get; set; } = 0;
+
         public float X => Location.X;
         public float Y => Location.Y;
         public float W => Size.Width;
@@ -61,7 +64,7 @@ namespace Dropper
                 nx = UserBounds.Left;
                 float VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
 
-                if (Special == SpecialMode.Bounce && VX < -VTX && !bouncingX)
+                if (CanBounce && VX < -VTX && !bouncingX)
                 {
                     VX = -VX * Restituion;
                     bouncingX = true;
@@ -75,7 +78,7 @@ namespace Dropper
                 nx = UserBounds.Right - W;
                 float VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
 
-                if (Special == SpecialMode.Bounce && !bouncingX && VX > VTX)
+                if (CanBounce && !bouncingX && VX > VTX)
                     VX = -VX * Restituion;
                 else
                     ResetVX();
@@ -86,7 +89,7 @@ namespace Dropper
                 ny = UserBounds.Top;
                 float VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
 
-                if (Special == SpecialMode.Bounce && !bouncingY && VY < -VTY)
+                if (CanBounce && !bouncingY && VY < -VTY)
                 {
                     VY = -VY * Restituion;
                     bouncingY = true;
@@ -100,7 +103,7 @@ namespace Dropper
                 ny = UserBounds.Bottom - H;
                 float VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
 
-                if (Special == SpecialMode.Bounce && !bouncingY && VY > VTY)
+                if (CanBounce && !bouncingY && VY > VTY)
                     VY = -VY * Restituion;
                 else
                     ResetVY();
@@ -116,9 +119,6 @@ namespace Dropper
         }
         public void ResetVX() => VX = 0;
         public void ResetVY() => VY = 0;
-
-        public enum SpecialMode { Bounce, Split, Crack }
-        public SpecialMode Special { get; set; } = SpecialMode.Bounce;
 
         public void DoubleSize()
         {

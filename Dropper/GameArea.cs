@@ -10,6 +10,8 @@ namespace Dropper
         public event Action<Block> ActiveBlockChanged;
         private bool debug = false;
 
+        private readonly Random random = new Random();
+
         public GameArea(List<Block> blocks)
         {
             BackColor = QOL.RGB(20);
@@ -33,6 +35,28 @@ namespace Dropper
                             block.Bounds.Y,
                             block.Bounds.Width,
                             block.Bounds.Height);
+                    for (int i = 0; i < block.Cracks; i++)
+                    {
+                        float angle = 0;
+
+                        switch (i)
+                        {
+                            case 0: angle = 0; break;
+                            case 1: angle = 45; break;
+                            case 2: angle = 90; break;
+                        }
+
+                        g.TranslateTransform(block.X + block.W / 2, block.Y + block.H / 2); 
+                        g.RotateTransform(angle);                                           
+                        g.DrawImage(
+                            Properties.Resources.Crack,
+                            -Properties.Resources.Crack.Width / 2,
+                            -Properties.Resources.Crack.Height / 2
+                        );
+                        g.ResetTransform();
+                    }
+
+
                     if (debug)
                         using (var brush = new SolidBrush(Color.IndianRed))
                         {
@@ -48,16 +72,15 @@ namespace Dropper
                         }
                 }
             };
-            Drag(blocks);
+            Clicks(blocks);
         }
 
-        private Block draggable;
-        private PointF dragOffset;
-        private void Drag(List<Block> blocks)
+        private void Clicks(List<Block> blocks)
         {
+            Block draggable = null;
+            PointF dragOffset = PointF.Empty;
+
             MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left)
                 {
                     Block clicked = null;
                     for (int i = 0; i < blocks.Count; i++)
@@ -70,15 +93,44 @@ namespace Dropper
                         }
                     }
 
-                    if (clicked != null)
+                    if (ev.Button == MouseButtons.Left)
                     {
-                        draggable = clicked;
-                        draggable.MouseDragging = true;
-                        draggable.ResetVelocity();
-                        dragOffset = new PointF(ev.Location.X - draggable.X, ev.Location.Y - draggable.Y);
+                        if (clicked != null)
+                        {
+                            draggable = clicked;
+                            draggable.MouseDragging = true;
+                            draggable.ResetVelocity();
+                            dragOffset = new PointF(ev.Location.X - draggable.X, ev.Location.Y - draggable.Y);
+                        }
                     }
-                }
-            };
+                    var crackTimer = new Timer() { Interval = 2000 };
+                    crackTimer.Tick += (se, e) =>
+                    {
+                        clicked.Cracks = 0;
+                        clicked.HalveSize();
+                        crackTimer.Stop();
+                    };
+                    if (ev.Button == MouseButtons.Right)
+                    {
+                        if (clicked != null)
+                            clicked.Cracks++;
+                        if (clicked.Cracks == 3)
+                            crackTimer.Start();                            
+                    }
+                };
+            //TODO fix this shit
+            /*
+             * Scale cracks depending on size
+             * Add crack sfx
+             * Give random crack angles & size (still relatively scaled)
+             * Change crack texture (rock eyebrow raise gif)
+             * Make crack split the block into 2 new blocks and randomly assign block focus
+             * Crack after terminal velocity impact
+             * Encapsulate crack timer or some shit
+             * Something with an egg
+             * MOVE THIS SHIT TO MAIN FORM?? Maybe
+             */
+
             MouseUp += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left && draggable != null)
@@ -87,6 +139,7 @@ namespace Dropper
                     draggable = null;
                 }
             };
+
             MouseMove += (s, ev) =>
             {
                 if (draggable == null) return;

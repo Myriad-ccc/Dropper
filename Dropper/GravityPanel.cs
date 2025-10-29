@@ -80,38 +80,6 @@ namespace Dropper
             };
             QOL.Align.Bottom.Center(displayVY, displayVX, 1);
             Controls.Add(displayVY);
-
-            var specialModes = Enum.GetValues(typeof(Block.SpecialMode)).Cast<object>().ToArray();
-
-            int specialModeIndex = Array.IndexOf(specialModes, Block.SpecialMode.Bounce);
-            targetBlock.Special = (Block.SpecialMode)specialModes[specialModeIndex];
-            var specialChoice = new CustomButton()
-            {
-                UseCompatibleTextRendering = true,
-                TabStop = false,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                BackColor = QOL.RGB(20),
-                Text = specialModes[specialModeIndex].ToString(),
-                AutoSize = true,
-                Visible = targetBlock.Gravity == Block.GravityMode.Dynamic && Enabled,
-            };
-            Controls.Add(specialChoice);
-            QOL.Align.Right(specialChoice, gravityChoice, 24);
-
-            GravityModeUpdated += () => specialChoice.Visible = targetBlock.Gravity == Block.GravityMode.Dynamic && Enabled;
-            specialChoice.MouseClick += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left)
-                {
-                    specialModeIndex++;
-                    if (specialModeIndex == specialModes.Length)
-                        specialModeIndex = 0;
-
-                    targetBlock.Special = (Block.SpecialMode)specialModes[specialModeIndex];
-                    specialChoice.Text = specialModes[specialModeIndex].ToString();
-                }
-            };
         }
     }
 }
