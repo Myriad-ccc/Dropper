@@ -9,6 +9,7 @@ namespace Dropper
     {
         private static readonly Random random = new Random();
         public static readonly string VCROSDMONO = "VCR OSD Mono";
+        public const int GlobalTimerUpdateRate = 10;
 
         public static int RandomInt(int max, int? min = null) => random.Next(min ?? 0, max);
 

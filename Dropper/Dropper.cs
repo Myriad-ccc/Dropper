@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace Dropper
 {
-    public partial class Form1 : Form //
+    public partial class Form1 : Form
     {
         public readonly List<Block> blocks = new List<Block>();
         private readonly Gravity gravity = new Gravity();
@@ -36,9 +36,10 @@ namespace Dropper
             ConfigureForm();
             LoadArea();
             AddBlock(setActive: true);
-            area.gameArea.ActiveBlockChanged += block => TargetBlock = block; //area.SetActiveBlock(block);
-            HoodooVoodooBlockMagic();
             gravity.Start(blocks);
+            //KeyMovement();
+            area.gameArea.ActiveBlockChanged += block => TargetBlock = block;
+            HoodooVoodooBlockMagic();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -66,7 +67,7 @@ namespace Dropper
                     eventResolved = true;
                     if (ev.Shift)
                     {
-                        if (TargetBlock.W / 2 >= 2 && TargetBlock.H / 2 >= 2)
+                        if (TargetBlock.W / 2 >= 4 && TargetBlock.H / 2 >= 4)
                             targetBlock.HalveSize();
                     }
                     else
@@ -84,7 +85,6 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-
         private void LoadArea()
         {
             area = new Area
@@ -104,6 +104,7 @@ namespace Dropper
 
             if (setActive == true)
             {
+                newBlock.Active = true;
                 targetBlock = newBlock;
                 TargetBlock = newBlock;
                 area.SetActiveBlock(newBlock);
@@ -138,8 +139,6 @@ namespace Dropper
         }
         private void ConfigureBlock(Block block)
         {
-            if (area == null || area.gameArea == null) QOL.WriteOut("idiot");
-
             block.OriginalWeight = block.Weight;
             block.UserBounds = area.gameArea.ClientRectangle;
 
@@ -152,5 +151,55 @@ namespace Dropper
                 (int)(area.gameArea.Width / 2 - block.W / 2),
                 (int)(area.gameArea.Height / 2 - block.H / 2));
         }
+
+        //private bool UpKey = false;
+        //private bool LeftKey = false;
+        //private bool DownKey = false;
+        //private bool RightKey = false;
+        //private float Speed => TargetBlock.Weight / 10.0f;
+        //private void KeyMovement()
+        //{
+        //    KeyDown += (s, ev) =>
+        //    {
+        //        if (ev.KeyCode == Keys.W && !UpKey) UpKey = true;
+        //        if (ev.KeyCode == Keys.A && !LeftKey) LeftKey = true;
+        //        if (ev.KeyCode == Keys.S && !DownKey) DownKey = true;
+        //        if (ev.KeyCode == Keys.D && !RightKey) RightKey = true;
+        //    };
+        //    KeyUp += (s, ev) =>
+        //    {
+        //        if (ev.KeyCode == Keys.W) UpKey = false;
+        //        if (ev.KeyCode == Keys.A) LeftKey = false;
+        //        if (ev.KeyCode == Keys.S) DownKey = false;
+        //        if (ev.KeyCode == Keys.D) RightKey = false;
+        //    };
+
+        //    var timer = new Timer() { Interval = 10 };
+        //    timer.Tick += (s, ev) =>
+        //    {
+        //        if (TargetBlock.MouseDragging) return;
+        //        float NX = 0.0f;
+        //        float NY = 0.0f;
+        //        if (UpKey) NY -= 1;
+        //        if (LeftKey) NX -= 1;
+        //        if (DownKey) NY += 1;
+        //        if (RightKey) NX += 1;
+
+        //        if (NX != 0 || NY != 0)
+        //        {
+        //            float length = (float)Math.Sqrt(NX * NX + NY * NY);
+        //            NX = NX / length * Speed;
+        //            NY = NY / length * Speed;
+        //        }
+        //        TargetBlock.Constrain();
+
+        //        TargetBlock.Bounds = new RectangleF(new PointF(
+        //            TargetBlock.X + NX,
+        //            TargetBlock.Y + NY),
+        //            TargetBlock.Size);
+        //        area.gameArea.Invalidate();
+        //    };
+        //    timer.Start();
+        //}
     }
 }

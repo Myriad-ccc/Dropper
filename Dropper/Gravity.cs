@@ -10,10 +10,11 @@ namespace Dropper
         public int X { get; set; } = 0;
         public int Y { get; set; } = 1;
 
-        public Timer Timer { get; set; } = new Timer() { Interval = 10 };
+        public static readonly float GravitationalConstant = 16f;
+
+        public Timer Timer { get; set; } = new Timer() { Interval = QOL.GlobalTimerUpdateRate };
         public event Action<float> VXChanged;
         public event Action<float> VYChanged;
-        public int Update => Timer.Interval;
 
         public event Action Redraw;
 
@@ -25,7 +26,7 @@ namespace Dropper
                     LinearGravity(block);
                     break;
                 case Block.GravityMode.Dynamic:
-                    DynamicGravity(block, Update);
+                    DynamicGravity(block);
                     break;
                 case Block.GravityMode.Magnetic:
                     MagneticGravity(block);
@@ -42,13 +43,12 @@ namespace Dropper
                 block.Size);
         }
 
-        private void DynamicGravity(Block block, int updateRate)
+        private void DynamicGravity(Block block)
         {
-            float deltaTime = updateRate / 1000f;
-            block.UpdateTerminalVelocity();
+            float deltaTime = QOL.GlobalTimerUpdateRate / 1000f;
 
-            block.VX += block.Weight * deltaTime * 16 * X;
-            block.VY += block.Weight * deltaTime * 16 * Y;
+            block.VX += block.Weight * deltaTime * GravitationalConstant * X;
+            block.VY += block.Weight * deltaTime * GravitationalConstant * Y;
 
             if (block.Weight > 0)
             {
@@ -101,7 +101,7 @@ namespace Dropper
                     if (!block.MouseDragging) //&& block.Active
                     {
                         Apply(block);
-                        block.Constrain();
+                        block.Constrain(X, Y);
                     }
                 }
 

@@ -9,7 +9,7 @@ namespace Dropper
         public PointF Location => Bounds.Location;
         public SizeF Size => Bounds.Size;
 
-        public bool Active { get; set; } = true;
+        public bool Active { get; set; } = false;
         public bool MouseDragging { get; set; }
         public Rectangle UserBounds { get; set; }
 
@@ -18,7 +18,7 @@ namespace Dropper
         public Color ActiveBorderColor { get; set; } = Color.IndianRed;
         public Color InactiveBorderColor { get; set; } = Color.Black;
 
-        public float BorderWidth => (float)(Math.Sqrt(Area) / 32);
+        public float BorderWidth => (float)Math.Pow(W, 1f / 6f);
 
         public float Weight { get; set; } = 100.0f;
         public float OriginalWeight { get; set; }
@@ -29,7 +29,7 @@ namespace Dropper
         public float VY { get; set; } = 0.0f;
 
         public float Area => W * H;
-        public float TerminalVelocity { get; set; }
+        public float TerminalVelocity => (float)Math.Pow(Area * Math.Abs(Weight), 1f / 1.8f);
 
         public float Restituion { get; set; } = 0.70f;
 
@@ -44,21 +44,24 @@ namespace Dropper
 
         public Block() { }
 
-        public enum GravityMode { Linear, Dynamic, Magnetic }
+        public enum GravityMode { Linear, Dynamic, Magnetic, None }
         public GravityMode Gravity { get; set; } = GravityMode.Dynamic;
 
-        public void Constrain()
+        public void Constrain(int GX = 0, int GY = 0)
         {
             if (UserBounds == Rectangle.Empty) return;
             float nx = X;
             float ny = Y;
             bool bouncingX = false;
             bool bouncingY = false;
+            float deltaTime = QOL.GlobalTimerUpdateRate / 1000f;
 
             if (Left <= UserBounds.Left)
             {
                 nx = UserBounds.Left;
-                if (Special == SpecialMode.Bounce && VX < 0)
+                float VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (Special == SpecialMode.Bounce && VX < -VTX && !bouncingX)
                 {
                     VX = -VX * Restituion;
                     bouncingX = true;
@@ -70,7 +73,9 @@ namespace Dropper
             if (Right >= UserBounds.Right)
             {
                 nx = UserBounds.Right - W;
-                if (Special == SpecialMode.Bounce && VX > 0 && !bouncingX)
+                float VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (Special == SpecialMode.Bounce && !bouncingX && VX > VTX)
                     VX = -VX * Restituion;
                 else
                     ResetVX();
@@ -79,7 +84,9 @@ namespace Dropper
             if (Top <= UserBounds.Top)
             {
                 ny = UserBounds.Top;
-                if (Special == SpecialMode.Bounce && VY < 0)
+                float VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (Special == SpecialMode.Bounce && !bouncingY && VY < -VTY)
                 {
                     VY = -VY * Restituion;
                     bouncingY = true;
@@ -91,7 +98,9 @@ namespace Dropper
             if (Bottom >= UserBounds.Bottom)
             {
                 ny = UserBounds.Bottom - H;
-                if (Special == SpecialMode.Bounce && VY > 0 && !bouncingY)
+                float VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (Special == SpecialMode.Bounce && !bouncingY && VY > VTY)
                     VY = -VY * Restituion;
                 else
                     ResetVY();
@@ -99,8 +108,6 @@ namespace Dropper
 
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
-
-        public float UpdateTerminalVelocity() => TerminalVelocity = (Area * Math.Abs(Weight)) / 16;
 
         public void ResetVelocity()
         {
