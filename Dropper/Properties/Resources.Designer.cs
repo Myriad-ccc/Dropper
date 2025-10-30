@@ -79,5 +79,14 @@ namespace Dropper.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream Hector {
+            get {
+                return ResourceManager.GetStream("Hector", resourceCulture);
+            }
+        }
     }
 }

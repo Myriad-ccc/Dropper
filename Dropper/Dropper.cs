@@ -7,7 +7,8 @@ namespace Dropper
 {
     public partial class Form1 : Form
     {
-        public readonly List<Block> blocks = new List<Block>();
+        private readonly Blocks Blocks = new Blocks();
+        public static readonly List<Block> blocks = new List<Block>();
         private readonly Gravity gravity = new Gravity();
 
         private TitleBar titleBar;
@@ -40,6 +41,8 @@ namespace Dropper
             //KeyMovement();
             area.gameArea.ActiveBlockChanged += block => TargetBlock = block;
             HoodooVoodooBlockMagic();
+
+            
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -92,7 +95,7 @@ namespace Dropper
                 Size = new Size(ClientSize.Width, ClientSize.Height - titleBar.Height),
                 Location = new Point(0, titleBar.Height)
             };
-            area.Build(blocks, gravity);
+            area.Build(gravity);
             Controls.Add(area);
         }
 

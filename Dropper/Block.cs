@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace Dropper
@@ -15,8 +16,8 @@ namespace Dropper
 
         public Color ActiveColor { get; set; } = QOL.RGB(50);
         public Color InactiveColor { get; set; } = QOL.RGB(50);
-        public Color ActiveBorderColor { get; set; } = Color.IndianRed;
-        public Color InactiveBorderColor { get; set; } = Color.Black;
+        public Color ActiveBorderColor { get; set; } = QOL.RGB(163, 42, 42);
+        public Color InactiveBorderColor { get; set; } = QOL.RGB(25);
 
         public float BorderWidth => (float)Math.Pow(W, 1f / 6f);
 
@@ -34,7 +35,7 @@ namespace Dropper
         public float Restituion { get; set; } = 0.70f;
 
         public bool CanBounce { get; set; } = true;
-        public int Cracks { get; set; } = 0;
+        public List<(PointF start, PointF end, float sy)> Cracks { get; set; } = new List<(PointF start, PointF end, float sy)>();
 
         public float X => Location.X;
         public float Y => Location.Y;
@@ -138,6 +139,37 @@ namespace Dropper
             float ny = Y + nh / 2f;
 
             Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
+        }
+    }
+
+    public class Blocks
+    {
+        private readonly Random random = new Random();
+
+        public static List<Block> Stack { get; set; } = new List<Block>();
+
+        public event Action<Block> ChangeFocus;
+        public event Action<Block> ConfigureBlock;
+
+        private void AddBlock(bool? setActive = null)
+        {
+            Block newBlock = new Block();
+            Stack.Add(newBlock);
+            ConfigureBlock?.Invoke(newBlock);
+
+            if (setActive == true)
+            {
+                newBlock.Active = true;
+                ChangeFocus?.Invoke(newBlock);
+            }
+        }
+
+        private void RemoveBlock(Block block, bool RandomRefocus = false)
+        {
+            if (Stack.Count < 2) return;
+            Stack.Remove(block);
+            var refocused = RandomRefocus ? Stack[random.Next(Stack.Count)] : Stack[Stack.Count - 1];
+            ChangeFocus?.Invoke(refocused);
         }
     }
 }

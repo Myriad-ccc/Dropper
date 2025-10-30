@@ -38,12 +38,12 @@ namespace Dropper
             };
         }
 
-        public void Build(List<Block> blocks, Gravity gravity)
+        public void Build(Gravity gravity)
         {
             Gravity = gravity;
 
             toolBar = new ToolbarPanel(gravity);
-            gameArea = new GameArea(blocks);
+            gameArea = new GameArea();
             floor = new Floor();
 
             Controls.Add(toolBar);
