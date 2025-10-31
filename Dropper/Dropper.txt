@@ -65,6 +65,8 @@ namespace Dropper
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Media;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Dropper
 {
@@ -115,6 +117,8 @@ namespace Dropper
         public enum GravityMode { Linear, Dynamic, Magnetic, None }
         public GravityMode Gravity { get; set; } = GravityMode.Dynamic;
 
+        public float VTX { get; set; }
+        public float VTY { get; set; }
         public void Constrain(int GX = 0, int GY = 0)
         {
             if (UserBounds == Rectangle.Empty) return;
@@ -123,11 +127,15 @@ namespace Dropper
             bool bouncingX = false;
             bool bouncingY = false;
             float deltaTime = QOL.GlobalTimerUpdateRate / 1000f;
+            float gc = Dropper.Gravity.GravitationalConstant;
 
             if (Left <= UserBounds.Left)
             {
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 nx = UserBounds.Left;
-                float VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && VX < -VTX && !bouncingX)
                 {
@@ -140,8 +148,11 @@ namespace Dropper
 
             if (Right >= UserBounds.Right)
             {
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 nx = UserBounds.Right - W;
-                float VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingX && VX > VTX)
                     VX = -VX * Restituion;
@@ -151,8 +162,11 @@ namespace Dropper
 
             if (Top <= UserBounds.Top)
             {
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 ny = UserBounds.Top;
-                float VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingY && VY < -VTY)
                 {
@@ -165,16 +179,18 @@ namespace Dropper
 
             if (Bottom >= UserBounds.Bottom)
             {
-                if (VX == TerminalVelocity)
-                    ny = UserBounds.Bottom - H;
-                float VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
+                ny = UserBounds.Bottom - H;
+                VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingY && VY > VTY)
                     VY = -VY * Restituion;
                 else
                     ResetVY();
             }
-
+            
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
 
@@ -225,7 +241,7 @@ namespace Dropper
                 VY = this.VY,
                 Restituion = this.Restituion,
                 CanBounce = this.CanBounce,
-                Cracks = new List<Crack>(this.Cracks),
+                Cracks = new List<Crack>(),
                 Gravity = this.Gravity,
             };
         }
@@ -257,27 +273,26 @@ namespace Dropper
         private float ScaleX => Length / CrackBitMap.Width;
         private float ScaleY { get; set; }
 
-        public void Generate(Block block, int cracksPerCrack = 1)
+        private readonly SoundPlayer VineBoom = new SoundPlayer(Properties.Resources.VineBoom);
+
+        public Crack(Block block)
         {
-            for (int i = 0; i < cracksPerCrack; i++)
+            VineBoom.Play();
+
+            StartX = (float)(block.W * random.NextDouble());
+            StartY = (float)(block.H * random.NextDouble());
+            EndX = (float)(block.W * random.NextDouble());
+            EndY = (float)(block.H * random.NextDouble());
+
+            while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.W / 10)
             {
-                StartX = (float)(block.W * random.NextDouble());
-                StartY = (float)(block.H * random.NextDouble());
                 EndX = (float)(block.W * random.NextDouble());
                 EndY = (float)(block.H * random.NextDouble());
-
-                while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.W / 10)
-                {
-                    EndX = (float)(block.W * random.NextDouble());
-                    EndY = (float)(block.H * random.NextDouble());
-                }
-                ScaleY = (float)(random.NextDouble() + 1);
-
-                block.Cracks.Add(new Crack());
             }
+            ScaleY = (float)(random.NextDouble() + 2);
         }
 
-        public void DrawAll(Graphics g, Block block)
+        public static void DrawAll(Graphics g, Block block)
         {
             var crackRegion = block.Bounds;
             crackRegion.Inflate(-2, -2);
@@ -288,7 +303,7 @@ namespace Dropper
             g.TranslateTransform(block.Left, block.Top);
 
             for (int i = 0; i < block.Cracks.Count; i++)
-                Draw(g);
+                block.Cracks[i].Draw(g);
 
             g.Restore(blockState);
 
@@ -531,6 +546,8 @@ namespace Dropper
             blocks.Redraw += () => area.gameArea.Invalidate();
             blocks.ChangeFocus += block => ChangeBlockFocused(block);
             blocks.ConfigureBlock += ConfigureBlock;
+
+            gravity.SplitBlock += block => blocks.Split(block);
             area.gameArea.SplitBlock += block => blocks.Split(block);
             area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
             blocks.Add();
@@ -1138,7 +1155,7 @@ namespace Dropper
                             block.Bounds.Width,
                             block.Bounds.Height);
 
-                    block.Cracks.
+                    Crack.DrawAll(g, block);
 
                     using (var borderPen = new Pen(block.Active ? block.ActiveBorderColor : block.InactiveBorderColor, (float)block.BorderWidth))
                         g.DrawRectangle(
@@ -1207,7 +1224,7 @@ namespace Dropper
                                 sp.Play();
                             }
                             else
-                                clicked.Cracks.Add(new Crack());
+                                clicked.Cracks.Add(new Crack(clicked));
                         }
                     }
                 };
@@ -1258,6 +1275,7 @@ namespace Dropper
         public static readonly float GravitationalConstant = 16f;
 
         public Timer Timer { get; set; } = new Timer() { Interval = QOL.GlobalTimerUpdateRate };
+        public event Action<Block> SplitBlock;
         public event Action<float> VXChanged;
         public event Action<float> VYChanged;
 
@@ -1295,16 +1313,15 @@ namespace Dropper
             block.VX += block.Weight * deltaTime * GravitationalConstant * X;
             block.VY += block.Weight * deltaTime * GravitationalConstant * Y;
 
-            if (block.Weight > 0)
-            {
+            if (block.Weight * X > 0)
                 block.VX = Math.Min(block.VX, block.TerminalVelocity);
+            if (block.Weight * Y > 0)
                 block.VY = Math.Min(block.VY, block.TerminalVelocity);
-            }
-            if (block.Weight < 0)
-            {
+
+            if (block.Weight * X < 0)
                 block.VX = Math.Max(block.VX, -block.TerminalVelocity);
+            if (block.Weight * Y < 0)
                 block.VY = Math.Max(block.VY, -block.TerminalVelocity);
-            }
 
             block.Bounds = new RectangleF(
                 new PointF(
@@ -1337,18 +1354,24 @@ namespace Dropper
 
         public void Start(List<Block> blocks)
         {
+            var blocksToSplit = new List<Block>();
             Timer.Tick += (s, ev) =>
             {
                 if (blocks == null || blocks.Count == 0) return;
 
-                foreach (Block block in blocks)
+                foreach(var block in blocks)
                 {
                     if (!block.MouseDragging) //&& block.Active
                     {
                         Apply(block);
                         block.Constrain(X, Y);
                     }
+                    if (block.Cracks.Count == 3)
+                        blocksToSplit.Add(block);
                 }
+                foreach (var block in blocksToSplit)
+                    SplitBlock.Invoke(block);
+                blocksToSplit.Clear();
 
                 Block active = blocks.Find(x => x.Active);
                 if (active != null && active.Gravity == Block.GravityMode.Dynamic)
@@ -1377,6 +1400,7 @@ namespace Dropper
     public class GravityPanel : CustomPanel
     {
         public Label displayVX, displayVY;
+        //public Label displayVTX, displayVTY;
         //private Action GravityModeUpdated;
 
         private bool built;
@@ -1390,6 +1414,9 @@ namespace Dropper
                 Build();
                 built = true;
             }
+
+            //block.VTXChanged += newVTX => displayVTX.Text = $"{block.VTX:F1}";
+            //block.VTYChanged += newVTY => displayVTY.Text = $"{block.VTY:F1}";
         }
 
         private void Build()
@@ -1449,6 +1476,23 @@ namespace Dropper
             };
             QOL.Align.Bottom.Center(displayVY, displayVX, 1);
             Controls.Add(displayVY);
+
+            //displayVTX = new Label()
+            //{
+            //    ForeColor = Color.White,
+            //    Font = new Font(QOL.VCROSDMONO, 16f)
+            //};
+            //QOL.Align.Right(displayVTX, displayVX, 16);
+            //Controls.Add(displayVTX);
+
+            //displayVTY = new Label()
+            //{
+            //    ForeColor = Color.White,
+            //    Font = new Font(QOL.VCROSDMONO, 16f),
+            //    AutoSize = true,
+            //};
+            //QOL.Align.Bottom.Center(displayVTY, displayVTX, 1);
+            //Controls.Add(displayVTY);
         }
     }
 }

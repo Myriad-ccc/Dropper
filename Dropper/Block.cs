@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Media;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Dropper
 {
@@ -51,6 +53,8 @@ namespace Dropper
         public enum GravityMode { Linear, Dynamic, Magnetic, None }
         public GravityMode Gravity { get; set; } = GravityMode.Dynamic;
 
+        public float VTX { get; set; }
+        public float VTY { get; set; }
         public void Constrain(int GX = 0, int GY = 0)
         {
             if (UserBounds == Rectangle.Empty) return;
@@ -59,11 +63,15 @@ namespace Dropper
             bool bouncingX = false;
             bool bouncingY = false;
             float deltaTime = QOL.GlobalTimerUpdateRate / 1000f;
+            float gc = Dropper.Gravity.GravitationalConstant;
 
             if (Left <= UserBounds.Left)
             {
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 nx = UserBounds.Left;
-                float VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && VX < -VTX && !bouncingX)
                 {
@@ -76,8 +84,11 @@ namespace Dropper
 
             if (Right >= UserBounds.Right)
             {
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 nx = UserBounds.Right - W;
-                float VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingX && VX > VTX)
                     VX = -VX * Restituion;
@@ -87,8 +98,11 @@ namespace Dropper
 
             if (Top <= UserBounds.Top)
             {
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 ny = UserBounds.Top;
-                float VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingY && VY < -VTY)
                 {
@@ -101,15 +115,18 @@ namespace Dropper
 
             if (Bottom >= UserBounds.Bottom)
             {
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                    Cracks.Add(new Crack(this));
+
                 ny = UserBounds.Bottom - H;
-                float VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+                VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingY && VY > VTY)
                     VY = -VY * Restituion;
                 else
                     ResetVY();
             }
-
+            
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
 
@@ -160,7 +177,7 @@ namespace Dropper
                 VY = this.VY,
                 Restituion = this.Restituion,
                 CanBounce = this.CanBounce,
-                Cracks = new List<Crack>(this.Cracks),
+                Cracks = new List<Crack>(),
                 Gravity = this.Gravity,
             };
         }
@@ -174,7 +191,7 @@ namespace Dropper
 
     public class Crack
     {
-        private readonly Random random = new Random();
+        private static readonly Random random = new Random();
         private readonly Bitmap CrackBitMap = Properties.Resources.Crack;
 
         private float StartX { get; set; }
@@ -192,14 +209,18 @@ namespace Dropper
         private float ScaleX => Length / CrackBitMap.Width;
         private float ScaleY { get; set; }
 
+        private readonly SoundPlayer VineBoom = new SoundPlayer(Properties.Resources.VineBoom);
+
         public Crack(Block block)
         {
+            VineBoom.Play();
+
             StartX = (float)(block.W * random.NextDouble());
             StartY = (float)(block.H * random.NextDouble());
             EndX = (float)(block.W * random.NextDouble());
             EndY = (float)(block.H * random.NextDouble());
 
-            while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.W / 10)
+            while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.H / 10)
             {
                 EndX = (float)(block.W * random.NextDouble());
                 EndY = (float)(block.H * random.NextDouble());

@@ -88,5 +88,23 @@ namespace Dropper.Properties {
                 return ResourceManager.GetStream("Hector", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream Pipe {
+            get {
+                return ResourceManager.GetStream("Pipe", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream VineBoom {
+            get {
+                return ResourceManager.GetStream("VineBoom", resourceCulture);
+            }
+        }
     }
 }

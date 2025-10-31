@@ -8,6 +8,7 @@ namespace Dropper
     public class GravityPanel : CustomPanel
     {
         public Label displayVX, displayVY;
+        //public Label displayVTX, displayVTY;
         //private Action GravityModeUpdated;
 
         private bool built;
@@ -21,6 +22,9 @@ namespace Dropper
                 Build();
                 built = true;
             }
+
+            //block.VTXChanged += newVTX => displayVTX.Text = $"{block.VTX:F1}";
+            //block.VTYChanged += newVTY => displayVTY.Text = $"{block.VTY:F1}";
         }
 
         private void Build()
@@ -80,6 +84,23 @@ namespace Dropper
             };
             QOL.Align.Bottom.Center(displayVY, displayVX, 1);
             Controls.Add(displayVY);
+
+            //displayVTX = new Label()
+            //{
+            //    ForeColor = Color.White,
+            //    Font = new Font(QOL.VCROSDMONO, 16f)
+            //};
+            //QOL.Align.Right(displayVTX, displayVX, 16);
+            //Controls.Add(displayVTX);
+
+            //displayVTY = new Label()
+            //{
+            //    ForeColor = Color.White,
+            //    Font = new Font(QOL.VCROSDMONO, 16f),
+            //    AutoSize = true,
+            //};
+            //QOL.Align.Bottom.Center(displayVTY, displayVTX, 1);
+            //Controls.Add(displayVTY);
         }
     }
 }

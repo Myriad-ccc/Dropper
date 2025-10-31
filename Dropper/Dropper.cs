@@ -23,6 +23,8 @@ namespace Dropper
             blocks.Redraw += () => area.gameArea.Invalidate();
             blocks.ChangeFocus += block => ChangeBlockFocused(block);
             blocks.ConfigureBlock += ConfigureBlock;
+
+            gravity.SplitBlock += block => blocks.Split(block);
             area.gameArea.SplitBlock += block => blocks.Split(block);
             area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
             blocks.Add();

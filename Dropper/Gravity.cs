@@ -13,6 +13,7 @@ namespace Dropper
         public static readonly float GravitationalConstant = 16f;
 
         public Timer Timer { get; set; } = new Timer() { Interval = QOL.GlobalTimerUpdateRate };
+        public event Action<Block> SplitBlock;
         public event Action<float> VXChanged;
         public event Action<float> VYChanged;
 
@@ -50,16 +51,15 @@ namespace Dropper
             block.VX += block.Weight * deltaTime * GravitationalConstant * X;
             block.VY += block.Weight * deltaTime * GravitationalConstant * Y;
 
-            if (block.Weight > 0)
-            {
+            if (block.Weight * X > 0)
                 block.VX = Math.Min(block.VX, block.TerminalVelocity);
+            if (block.Weight * Y > 0)
                 block.VY = Math.Min(block.VY, block.TerminalVelocity);
-            }
-            if (block.Weight < 0)
-            {
+
+            if (block.Weight * X < 0)
                 block.VX = Math.Max(block.VX, -block.TerminalVelocity);
+            if (block.Weight * Y < 0)
                 block.VY = Math.Max(block.VY, -block.TerminalVelocity);
-            }
 
             block.Bounds = new RectangleF(
                 new PointF(
@@ -92,18 +92,24 @@ namespace Dropper
 
         public void Start(List<Block> blocks)
         {
+            var blocksToSplit = new List<Block>();
             Timer.Tick += (s, ev) =>
             {
                 if (blocks == null || blocks.Count == 0) return;
 
-                foreach (Block block in blocks)
+                foreach(var block in blocks)
                 {
                     if (!block.MouseDragging) //&& block.Active
                     {
                         Apply(block);
                         block.Constrain(X, Y);
                     }
+                    if (block.Cracks.Count == 3)
+                        blocksToSplit.Add(block);
                 }
+                foreach (var block in blocksToSplit)
+                    SplitBlock.Invoke(block);
+                blocksToSplit.Clear();
 
                 Block active = blocks.Find(x => x.Active);
                 if (active != null && active.Gravity == Block.GravityMode.Dynamic)
