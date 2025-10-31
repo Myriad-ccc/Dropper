@@ -83,6 +83,7 @@ namespace Dropper
                 }
                 if (ev.KeyCode == Keys.Back)
                 {
+                    if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
                     blocks.Remove();
                     area.gameArea.Invalidate();
                 }

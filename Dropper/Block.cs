@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Media;
-using System.Security.Cryptography.X509Certificates;
+using System.Windows.Forms;
 
 namespace Dropper
 {
@@ -67,7 +67,7 @@ namespace Dropper
 
             if (Left <= UserBounds.Left)
             {
-                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 nx = UserBounds.Left;
@@ -84,7 +84,7 @@ namespace Dropper
 
             if (Right >= UserBounds.Right)
             {
-                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 nx = UserBounds.Right - W;
@@ -98,7 +98,7 @@ namespace Dropper
 
             if (Top <= UserBounds.Top)
             {
-                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 ny = UserBounds.Top;
@@ -115,8 +115,8 @@ namespace Dropper
 
             if (Bottom >= UserBounds.Bottom)
             {
-                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
-                    Cracks.Add(new Crack(this));
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
+                        Cracks.Add(new Crack(this));
 
                 ny = UserBounds.Bottom - H;
                 VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
@@ -128,15 +128,15 @@ namespace Dropper
             }
             
             Bounds = new RectangleF(new PointF(nx, ny), Size);
-        }
+        }        
 
+        public void ResetVX() => VX = 0;
+        public void ResetVY() => VY = 0;
         public void ResetVelocity()
         {
             ResetVX();
             ResetVY();
         }
-        public void ResetVX() => VX = 0;
-        public void ResetVY() => VY = 0;
 
         public void DoubleSize()
         {
@@ -177,7 +177,7 @@ namespace Dropper
                 VY = this.VY,
                 Restituion = this.Restituion,
                 CanBounce = this.CanBounce,
-                Cracks = new List<Crack>(),
+                Cracks = new List<Crack>(this.Cracks),
                 Gravity = this.Gravity,
             };
         }
@@ -213,7 +213,10 @@ namespace Dropper
 
         public Crack(Block block)
         {
-            VineBoom.Play();
+            if (block.Cracks.Count == 3) return;
+
+            if (block.Active)
+                VineBoom.Play();
 
             StartX = (float)(block.W * random.NextDouble());
             StartY = (float)(block.H * random.NextDouble());
@@ -303,6 +306,9 @@ namespace Dropper
             var left = Block.Clone(block);
             var right = Block.Clone(block);
 
+            left.Cracks.Clear();
+            right.Cracks.Clear();
+
             if (block.Active)
             {
                 int randomBool = random.Next(0, 2);
@@ -316,11 +322,15 @@ namespace Dropper
             Stack.Remove(block);
 
             left.Bounds = new RectangleF(
-                left.Bounds.Location,
+                new PointF(
+                    left.Left,
+                    left.Top),
                 new SizeF(
                     left.W / 2,
                     left.H));
             left.Weight /= 2;
+            left.VX /= 2;
+            left.VY /= 2;
 
             right.Bounds = new RectangleF(
                 new PointF(
@@ -330,6 +340,8 @@ namespace Dropper
                     right.W / 2,
                     right.H));
             right.Weight /= 2;
+            right.VX /= 2;
+            right.VY /= 2;
 
             Stack.Insert(index, left);
             Stack.Insert(index, right);

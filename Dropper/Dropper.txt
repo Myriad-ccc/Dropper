@@ -66,7 +66,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Media;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Dropper
 {
@@ -131,7 +130,7 @@ namespace Dropper
 
             if (Left <= UserBounds.Left)
             {
-                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 nx = UserBounds.Left;
@@ -148,7 +147,7 @@ namespace Dropper
 
             if (Right >= UserBounds.Right)
             {
-                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VX) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 nx = UserBounds.Right - W;
@@ -162,7 +161,7 @@ namespace Dropper
 
             if (Top <= UserBounds.Top)
             {
-                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 ny = UserBounds.Top;
@@ -179,7 +178,7 @@ namespace Dropper
 
             if (Bottom >= UserBounds.Bottom)
             {
-                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity))
+                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 ny = UserBounds.Bottom - H;
@@ -190,7 +189,7 @@ namespace Dropper
                 else
                     ResetVY();
             }
-            
+
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
 
@@ -255,7 +254,7 @@ namespace Dropper
 
     public class Crack
     {
-        private readonly Random random = new Random();
+        private static readonly Random random = new Random();
         private readonly Bitmap CrackBitMap = Properties.Resources.Crack;
 
         private float StartX { get; set; }
@@ -277,14 +276,15 @@ namespace Dropper
 
         public Crack(Block block)
         {
-            VineBoom.Play();
+            if (block.Active)
+                VineBoom.Play();
 
             StartX = (float)(block.W * random.NextDouble());
             StartY = (float)(block.H * random.NextDouble());
             EndX = (float)(block.W * random.NextDouble());
             EndY = (float)(block.H * random.NextDouble());
 
-            while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.W / 10)
+            while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.H / 10)
             {
                 EndX = (float)(block.W * random.NextDouble());
                 EndY = (float)(block.H * random.NextDouble());
@@ -606,6 +606,7 @@ namespace Dropper
                 }
                 if (ev.KeyCode == Keys.Back)
                 {
+                    if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
                     blocks.Remove();
                     area.gameArea.Invalidate();
                 }
@@ -1135,8 +1136,6 @@ namespace Dropper
         public event Action<Block> SplitBlock;
         private bool debug = false;
 
-        private readonly Random random = new Random();
-
         public GameArea()
         {
             BackColor = QOL.RGB(20);
@@ -1145,42 +1144,91 @@ namespace Dropper
                 var g = ev.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                foreach (var block in Blocks.Stack)
-                {
-                    using (var blockBrush = new SolidBrush(block.Active ? block.ActiveColor : block.InactiveColor))
-                        g.FillRectangle(
-                            blockBrush,
-                            block.Bounds.X,
-                            block.Bounds.Y,
-                            block.Bounds.Width,
-                            block.Bounds.Height);
-
-                    Crack.DrawAll(g, block);
-
-                    using (var borderPen = new Pen(block.Active ? block.ActiveBorderColor : block.InactiveBorderColor, (float)block.BorderWidth))
-                        g.DrawRectangle(
-                            borderPen,
-                            block.Bounds.X,
-                            block.Bounds.Y,
-                            block.Bounds.Width,
-                            block.Bounds.Height);
-
-                    if (debug)
-                        using (var brush = new SolidBrush(Color.IndianRed))
-                        {
-                            var font = new Font(QOL.VCROSDMONO, 20f);
-                            var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
-                            g.DrawString(
-                                $"{block.Weight:F0}",
-                                new Font(QOL.VCROSDMONO, 16f),
-                                brush,
-                                new PointF(
-                                    block.Left + size.Width / 8,
-                                    block.Top + size.Height / 2));
-                        }
-                }
+                DrawInactiveBlocks(g);
+                DrawActiveBlocks(g);
             };
             Clicks();
+        }
+
+        private void DrawInactiveBlocks(Graphics g)
+        {
+            foreach (var block in Blocks.Stack)
+            {
+                if (block.Active) continue;
+
+                using (var blockBrush = new SolidBrush(block.InactiveColor))
+                    g.FillRectangle(
+                        blockBrush,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                Crack.DrawAll(g, block);
+
+                using (var borderPen = new Pen(block.InactiveBorderColor, (float)block.BorderWidth))
+                    g.DrawRectangle(
+                        borderPen,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                if (debug)
+                    using (var brush = new SolidBrush(Color.IndianRed))
+                    {
+                        var font = new Font(QOL.VCROSDMONO, 20f);
+                        var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                        g.DrawString(
+                            $"{block.Weight:F0}",
+                            new Font(QOL.VCROSDMONO, 16f),
+                            brush,
+                            new PointF(
+                                block.Left + size.Width / 8,
+                                block.Top + size.Height / 2));
+                    }
+            }
+
+        }
+        private void DrawActiveBlocks(Graphics g)
+        {
+            foreach (var block in Blocks.Stack)
+            {
+                if (!block.Active) continue;
+
+                using (var blockBrush = new SolidBrush(block.ActiveColor))
+                    g.FillRectangle(
+                        blockBrush,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                Crack.DrawAll(g, block);
+
+                using (var borderPen = new Pen(block.ActiveBorderColor, (float)block.BorderWidth))
+                    g.DrawRectangle(
+                        borderPen,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                if (debug)
+                    using (var brush = new SolidBrush(Color.IndianRed))
+                    {
+                        var font = new Font(QOL.VCROSDMONO, 20f);
+                        var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                        g.DrawString(
+                            $"{block.Weight:F0}",
+                            new Font(QOL.VCROSDMONO, 16f),
+                            brush,
+                            new PointF(
+                                block.Left + size.Width / 8,
+                                block.Top + size.Height / 2));
+                    }
+            }
+
         }
 
         private void Clicks()

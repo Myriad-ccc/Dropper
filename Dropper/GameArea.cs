@@ -13,8 +13,6 @@ namespace Dropper
         public event Action<Block> SplitBlock;
         private bool debug = false;
 
-        private readonly Random random = new Random();
-
         public GameArea()
         {
             BackColor = QOL.RGB(20);
@@ -23,42 +21,91 @@ namespace Dropper
                 var g = ev.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                foreach (var block in Blocks.Stack)
-                {
-                    using (var blockBrush = new SolidBrush(block.Active ? block.ActiveColor : block.InactiveColor))
-                        g.FillRectangle(
-                            blockBrush,
-                            block.Bounds.X,
-                            block.Bounds.Y,
-                            block.Bounds.Width,
-                            block.Bounds.Height);
-
-                    Crack.DrawAll(g, block);
-
-                    using (var borderPen = new Pen(block.Active ? block.ActiveBorderColor : block.InactiveBorderColor, (float)block.BorderWidth))
-                        g.DrawRectangle(
-                            borderPen,
-                            block.Bounds.X,
-                            block.Bounds.Y,
-                            block.Bounds.Width,
-                            block.Bounds.Height);
-
-                    if (debug)
-                        using (var brush = new SolidBrush(Color.IndianRed))
-                        {
-                            var font = new Font(QOL.VCROSDMONO, 20f);
-                            var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
-                            g.DrawString(
-                                $"{block.Weight:F0}",
-                                new Font(QOL.VCROSDMONO, 16f),
-                                brush,
-                                new PointF(
-                                    block.Left + size.Width / 8,
-                                    block.Top + size.Height / 2));
-                        }
-                }
+                DrawInactiveBlocks(g);
+                DrawActiveBlocks(g);
             };
             Clicks();
+        }
+
+        private void DrawInactiveBlocks(Graphics g)
+        {
+            foreach (var block in Blocks.Stack)
+            {
+                if (block.Active) continue;
+
+                using (var blockBrush = new SolidBrush(block.InactiveColor))
+                    g.FillRectangle(
+                        blockBrush,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                Crack.DrawAll(g, block);
+
+                using (var borderPen = new Pen(block.InactiveBorderColor, (float)block.BorderWidth))
+                    g.DrawRectangle(
+                        borderPen,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                if (debug)
+                    using (var brush = new SolidBrush(Color.IndianRed))
+                    {
+                        var font = new Font(QOL.VCROSDMONO, 20f);
+                        var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                        g.DrawString(
+                            $"{block.Weight:F0}",
+                            new Font(QOL.VCROSDMONO, 16f),
+                            brush,
+                            new PointF(
+                                block.Left + size.Width / 8,
+                                block.Top + size.Height / 2));
+                    }
+            }
+
+        }
+        private void DrawActiveBlocks(Graphics g)
+        {
+            foreach (var block in Blocks.Stack)
+            {
+                if (!block.Active) continue;
+
+                using (var blockBrush = new SolidBrush(block.ActiveColor))
+                    g.FillRectangle(
+                        blockBrush,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                Crack.DrawAll(g, block);
+
+                using (var borderPen = new Pen(block.ActiveBorderColor, (float)block.BorderWidth))
+                    g.DrawRectangle(
+                        borderPen,
+                        block.Bounds.X,
+                        block.Bounds.Y,
+                        block.Bounds.Width,
+                        block.Bounds.Height);
+
+                if (debug)
+                    using (var brush = new SolidBrush(Color.IndianRed))
+                    {
+                        var font = new Font(QOL.VCROSDMONO, 20f);
+                        var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                        g.DrawString(
+                            $"{block.Weight:F0}",
+                            new Font(QOL.VCROSDMONO, 16f),
+                            brush,
+                            new PointF(
+                                block.Left + size.Width / 8,
+                                block.Top + size.Height / 2));
+                    }
+            }
+
         }
 
         private void Clicks()
@@ -106,11 +153,6 @@ namespace Dropper
                         }
                     }
                 };
-            //TODO
-            /*
-             * Crack after terminal velocity impact?
-             * Something with an egg???
-             */
 
             MouseUp += (s, ev) =>
             {
