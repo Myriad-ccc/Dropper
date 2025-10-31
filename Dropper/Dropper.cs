@@ -6,7 +6,7 @@ namespace Dropper
 {
     public partial class Form1 : Form
     {
-        private Blocks Blocks;
+        private Blocks blocks;
         private readonly Gravity gravity = new Gravity();
 
         private TitleBar titleBar;
@@ -18,26 +18,29 @@ namespace Dropper
         {
             ConfigureForm();
             LoadArea();
-            Blocks = new Blocks();
-            Blocks.ChangeFocus += block => ChangeBlockFocused(block);
-            Blocks.ConfigureBlock += ConfigureBlock;
-            Blocks.Add();
+
+            blocks = new Blocks();
+            blocks.Redraw += () => area.gameArea.Invalidate();
+            blocks.ChangeFocus += block => ChangeBlockFocused(block);
+            blocks.ConfigureBlock += ConfigureBlock;
+            area.gameArea.SplitBlock += block => blocks.Split(block);
+            area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
+            blocks.Add();
+
             gravity.Start(Blocks.Stack);
             //KeyMovement();
-            area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
             HoodooVoodooBlockMagic();
-            QOL.QuickWriteOut(() => Blocks.Stack.Count, titleBar);
         }
 
         private void ChangeBlockFocused(Block block)
         {
-            if (block == Blocks.Target)
+            if (block == blocks.Target)
                 return;
 
-            if (Blocks.Target != null)
-                Blocks.Target.Active = false;
-            Blocks.Target = block;
-            Blocks.Target.Active = true;
+            if (blocks.Target != null)
+                blocks.Target.Active = false;
+            blocks.Target = block;
+            blocks.Target.Active = true;
 
             area.SetTarget(block);
             area.gameArea.Invalidate();
@@ -47,7 +50,7 @@ namespace Dropper
         {
             if (keyData == Keys.Enter)
             {
-                Blocks.Add();
+                blocks.Add();
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -68,17 +71,17 @@ namespace Dropper
                     eventResolved = true;
                     if (ev.Shift)
                     {
-                        if (Blocks.Target.W / 2 >= 4 && Blocks.Target.H / 2 >= 4)
-                            Blocks.Target.HalveSize();
+                        if (blocks.Target.W / 2 >= 4 && blocks.Target.H / 2 >= 4)
+                            blocks.Target.HalveSize();
                     }
                     else
-                        if (Blocks.Target.W <= area.gameArea.Width / 2 && Blocks.Target.H <= area.gameArea.Height / 2)
-                        Blocks.Target.DoubleSize();
+                        if (blocks.Target.W <= area.gameArea.Width / 2 && blocks.Target.H <= area.gameArea.Height / 2)
+                        blocks.Target.DoubleSize();
                     area.gameArea.Invalidate();
                 }
                 if (ev.KeyCode == Keys.Back)
                 {
-                    Blocks.Remove();
+                    blocks.Remove();
                     area.gameArea.Invalidate();
                 }
             };

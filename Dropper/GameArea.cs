@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -11,6 +10,7 @@ namespace Dropper
     public class GameArea : CustomPanel
     {
         public event Action<Block> FocusedBlockChanged;
+        public event Action<Block> SplitBlock;
         private bool debug = false;
 
         private readonly Random random = new Random();
@@ -33,7 +33,7 @@ namespace Dropper
                             block.Bounds.Width,
                             block.Bounds.Height);
 
-                    DrawCracks(g, block);
+                    Crack.DrawAll(g, block);
 
                     using (var borderPen = new Pen(block.Active ? block.ActiveBorderColor : block.InactiveBorderColor, (float)block.BorderWidth))
                         g.DrawRectangle(
@@ -58,15 +58,10 @@ namespace Dropper
                         }
                 }
             };
-            Clicks(Blocks.Stack);
+            Clicks();
         }
 
-        private void Split(Block block)
-        {
-            // split here & have fun
-        }
-
-        private void Clicks(List<Block> blocks)
+        private void Clicks()
         {
             Block draggable = null;
             PointF dragOffset = PointF.Empty;
@@ -79,7 +74,6 @@ namespace Dropper
                         if (Blocks.Stack[i].Bounds.Contains(ev.Location))
                         {
                             clicked = Blocks.Stack[i];
-                            FocusedBlockChanged.Invoke(Blocks.Stack[i]);
                             break;
                         }
                     }
@@ -88,6 +82,7 @@ namespace Dropper
                     {
                         if (clicked != null)
                         {
+                            FocusedBlockChanged.Invoke(clicked);
                             draggable = clicked;
                             draggable.MouseDragging = true;
                             draggable.ResetVelocity();
@@ -102,16 +97,16 @@ namespace Dropper
                             if (clicked.Cracks.Count >= 2)
                             {
                                 clicked.Cracks.Clear();
-                                Split(clicked);
+                                SplitBlock.Invoke(clicked);
                                 var sp = new SoundPlayer(Properties.Resources.Hector);
                                 sp.Play();
                             }
                             else
-                                CrackBlock(clicked);
+                                clicked.Cracks.Add(new Crack(clicked));
                         }
                     }
                 };
-            //TODO fix this shit
+            //TODO
             /*
              * Crack after terminal velocity impact?
              * Something with an egg???
@@ -140,69 +135,6 @@ namespace Dropper
 
                 Invalidate();
             };
-        }
-
-        private void CrackBlock(Block block, int cracks = 1)
-        {
-            for (int i = 0; i < cracks; i++)
-            {
-                float startX = (float)(block.W * random.NextDouble());
-                float startY = (float)(block.H * random.NextDouble());
-                float endX = (float)(block.W * random.NextDouble());
-                float endY = (float)(block.H * random.NextDouble());
-
-                while (Math.Abs(startX - endX) < block.W/10 || Math.Abs(startY - endY) < block.W/10)
-                {
-                    endX = (float)(block.W * random.NextDouble());
-                    endY = (float)(block.H * random.NextDouble());
-                }
-                var start = new PointF(startX, startY);
-                var end = new PointF(endX, endY);
-
-                float sy = (float)(random.NextDouble() + 1);
-
-                block.Cracks.Add((start, end, sy));
-            }
-        }
-
-        private void DrawCracks(Graphics g, Block block)
-        {
-            Bitmap crackBitMap = Properties.Resources.Crack;
-
-            var crackRegion = block.Bounds;
-            crackRegion.Inflate(-2, -2);
-            g.SetClip(crackRegion);
-
-            var blockState = g.Save();
-
-            g.TranslateTransform(block.Left, block.Top);
-
-            foreach (var (start, end, sy) in block.Cracks)
-            {
-                var crackState = g.Save();
-
-                g.TranslateTransform(start.X, start.Y);
-
-                float dx = end.X - start.X;
-                float dy = end.Y - start.Y;
-
-                float angle = (float)Math.Atan2(dy, dx) * (180.0f / (float)Math.PI);
-                float length = (float)Math.Sqrt(dx * dx + dy * dy);
-                if (length == 0) continue;
-
-                float scaleX = length / crackBitMap.Width;
-                float scaleY = sy;
-
-                g.RotateTransform(angle);
-                g.ScaleTransform(scaleX, scaleY);
-
-                g.DrawImage(crackBitMap, 0, -crackBitMap.Height / 2f);
-
-                g.Restore(crackState);
-            }
-            g.Restore(blockState);
-
-            g.ResetClip();
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
 
 namespace Dropper
 {
@@ -36,7 +35,7 @@ namespace Dropper
         public float Restituion { get; set; } = 0.70f;
 
         public bool CanBounce { get; set; } = true;
-        public List<(PointF start, PointF end, float sy)> Cracks { get; set; } = new List<(PointF start, PointF end, float sy)>();
+        public List<Crack> Cracks = new List<Crack>();
 
         public float X => Location.X;
         public float Y => Location.Y;
@@ -141,6 +140,106 @@ namespace Dropper
 
             Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
         }
+
+        public Block Copy()
+        {
+            return new Block()
+            {
+                Bounds = this.Bounds,
+                Active = this.Active,
+                MouseDragging = this.MouseDragging,
+                UserBounds = this.UserBounds,
+                ActiveColor = this.ActiveColor,
+                InactiveColor = this.InactiveColor,
+                ActiveBorderColor = this.ActiveBorderColor,
+                InactiveBorderColor = this.InactiveBorderColor,
+                Weight = this.Weight,
+                OriginalWeight = this.OriginalWeight,
+                MagneticCore = this.MagneticCore,
+                VX = this.VX,
+                VY = this.VY,
+                Restituion = this.Restituion,
+                CanBounce = this.CanBounce,
+                Cracks = new List<Crack>(this.Cracks),
+                Gravity = this.Gravity,
+            };
+        }
+
+        public static Block Clone(Block source)
+        {
+            if (source == null) return null;
+            return source.Copy();
+        }
+    }
+
+    public class Crack
+    {
+        private readonly Random random = new Random();
+        private readonly Bitmap CrackBitMap = Properties.Resources.Crack;
+
+        private float StartX { get; set; }
+        private float StartY { get; set; }
+
+        private float EndX { get; set; }
+        private float EndY { get; set; }
+
+        private float DX => EndX - StartX;
+        private float DY => EndY - StartY;
+
+        private float Angle => (float)Math.Atan2(DY, DX) * (180.0f / (float)Math.PI);
+        private float Length => (float)Math.Sqrt(DX * DX + DY * DY);
+
+        private float ScaleX => Length / CrackBitMap.Width;
+        private float ScaleY { get; set; }
+
+        public Crack(Block block)
+        {
+            StartX = (float)(block.W * random.NextDouble());
+            StartY = (float)(block.H * random.NextDouble());
+            EndX = (float)(block.W * random.NextDouble());
+            EndY = (float)(block.H * random.NextDouble());
+
+            while (Math.Abs(StartX - EndX) < block.W / 10 || Math.Abs(StartY - EndY) < block.W / 10)
+            {
+                EndX = (float)(block.W * random.NextDouble());
+                EndY = (float)(block.H * random.NextDouble());
+            }
+            ScaleY = (float)(random.NextDouble() + 2);
+        }
+
+        public static void DrawAll(Graphics g, Block block)
+        {
+            var crackRegion = block.Bounds;
+            crackRegion.Inflate(-2, -2);
+            g.SetClip(crackRegion);
+
+            var blockState = g.Save();
+
+            g.TranslateTransform(block.Left, block.Top);
+
+            for (int i = 0; i < block.Cracks.Count; i++)
+                block.Cracks[i].Draw(g);
+
+            g.Restore(blockState);
+
+            g.ResetClip();
+        }
+
+        private void Draw(Graphics g)
+        {
+            if (Length == 0) return;
+
+            var crackState = g.Save();
+
+            g.TranslateTransform(StartX, StartY);
+
+            g.RotateTransform(Angle);
+            g.ScaleTransform(ScaleX, ScaleY);
+
+            g.DrawImage(CrackBitMap, 0, -CrackBitMap.Height / 2f);
+
+            g.Restore(crackState);
+        }
     }
 
     public class Blocks
@@ -152,6 +251,7 @@ namespace Dropper
 
         public event Action<Block> ChangeFocus;
         public event Action<Block> ConfigureBlock;
+        public event Action Redraw;
 
         public void Add(Block @new = null)
         {
@@ -172,14 +272,48 @@ namespace Dropper
             Target = null;
             var refocused =
                 RandomRefocus
-                ?  (Stack.Count > 0 ? Stack[random.Next(Stack.Count)] : null)
-                : (Stack.Count >= 1 ? Stack[Stack.Count-1] : null);
+                ? (Stack.Count > 0 ? Stack[random.Next(Stack.Count)] : null)
+                : (Stack.Count >= 1 ? Stack[Stack.Count - 1] : null);
             ChangeFocus.Invoke(refocused);
         }
 
         public void Split(Block block)
         {
-            
+            var left = Block.Clone(block);
+            var right = Block.Clone(block);
+
+            if (block.Active)
+            {
+                int randomBool = random.Next(0, 2);
+                left.Active = randomBool == 0;
+                right.Active = !left.Active;
+                ChangeFocus.Invoke(left.Active ? left : right);
+            }
+            else left.Active = right.Active = false;
+
+            int index = Stack.IndexOf(block);
+            Stack.Remove(block);
+
+            left.Bounds = new RectangleF(
+                left.Bounds.Location,
+                new SizeF(
+                    left.W / 2,
+                    left.H));
+            left.Weight /= 2;
+
+            right.Bounds = new RectangleF(
+                new PointF(
+                    right.Left + right.W / 2,
+                    right.Top),
+                new SizeF(
+                    right.W / 2,
+                    right.H));
+            right.Weight /= 2;
+
+            Stack.Insert(index, left);
+            Stack.Insert(index, right);
+
+            Redraw.Invoke();
         }
     }
 }
