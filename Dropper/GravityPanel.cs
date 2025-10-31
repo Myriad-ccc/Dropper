@@ -8,12 +8,12 @@ namespace Dropper
     public class GravityPanel : CustomPanel
     {
         public Label displayVX, displayVY;
-        private Action GravityModeUpdated;
+        //private Action GravityModeUpdated;
 
         private bool built;
         private Block targetBlock;
 
-        public void SetActiveBlock(Block block)
+        public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
             if (!built)
@@ -59,7 +59,7 @@ namespace Dropper
 
                     targetBlock.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
                     gravityChoice.Text = gravityModes[gravityModeIndex].ToString();
-                    GravityModeUpdated?.Invoke();
+                    //GravityModeUpdated.Invoke();
                 }
             };
             Controls.Add(gravityChoice);

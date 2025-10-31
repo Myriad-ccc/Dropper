@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -7,28 +6,11 @@ namespace Dropper
 {
     public partial class Form1 : Form
     {
-        private readonly Blocks Blocks = new Blocks();
-        public static readonly List<Block> blocks = new List<Block>();
+        private Blocks Blocks;
         private readonly Gravity gravity = new Gravity();
 
         private TitleBar titleBar;
         private Area area;
-
-        private Block targetBlock = null;
-        public Block TargetBlock
-        {
-            get => targetBlock;
-            set
-            {
-                if (targetBlock != value)
-                {
-                    targetBlock.Active = false;
-                    targetBlock = value;
-                    targetBlock.Active = true;
-                    area.SetActiveBlock(value);
-                }
-            }
-        }
 
         public Form1() => InitializeComponent();
 
@@ -36,20 +18,36 @@ namespace Dropper
         {
             ConfigureForm();
             LoadArea();
-            AddBlock(setActive: true);
-            gravity.Start(blocks);
+            Blocks = new Blocks();
+            Blocks.ChangeFocus += block => ChangeBlockFocused(block);
+            Blocks.ConfigureBlock += ConfigureBlock;
+            Blocks.Add();
+            gravity.Start(Blocks.Stack);
             //KeyMovement();
-            area.gameArea.ActiveBlockChanged += block => TargetBlock = block;
+            area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
             HoodooVoodooBlockMagic();
+            QOL.QuickWriteOut(() => Blocks.Stack.Count, titleBar);
+        }
 
-            
+        private void ChangeBlockFocused(Block block)
+        {
+            if (block == Blocks.Target)
+                return;
+
+            if (Blocks.Target != null)
+                Blocks.Target.Active = false;
+            Blocks.Target = block;
+            Blocks.Target.Active = true;
+
+            area.SetTarget(block);
+            area.gameArea.Invalidate();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.Enter)
             {
-                AddBlock(setActive: false);
+                Blocks.Add();
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -70,16 +68,19 @@ namespace Dropper
                     eventResolved = true;
                     if (ev.Shift)
                     {
-                        if (TargetBlock.W / 2 >= 4 && TargetBlock.H / 2 >= 4)
-                            targetBlock.HalveSize();
+                        if (Blocks.Target.W / 2 >= 4 && Blocks.Target.H / 2 >= 4)
+                            Blocks.Target.HalveSize();
                     }
                     else
-                        if (TargetBlock.W <= area.gameArea.Width / 2 && TargetBlock.H <= area.gameArea.Height / 2)
-                        TargetBlock.DoubleSize();
+                        if (Blocks.Target.W <= area.gameArea.Width / 2 && Blocks.Target.H <= area.gameArea.Height / 2)
+                        Blocks.Target.DoubleSize();
                     area.gameArea.Invalidate();
                 }
                 if (ev.KeyCode == Keys.Back)
-                    RemoveBlock();
+                {
+                    Blocks.Remove();
+                    area.gameArea.Invalidate();
+                }
             };
 
             KeyUp += (s, ev) =>
@@ -88,6 +89,7 @@ namespace Dropper
                     eventResolved = false;
             };
         }
+
         private void LoadArea()
         {
             area = new Area
@@ -97,28 +99,6 @@ namespace Dropper
             };
             area.Build(gravity);
             Controls.Add(area);
-        }
-
-        private void AddBlock(bool? setActive = null)
-        {
-            Block newBlock = new Block();
-            blocks.Add(newBlock);
-            ConfigureBlock(newBlock);
-
-            if (setActive == true)
-            {
-                newBlock.Active = true;
-                targetBlock = newBlock;
-                TargetBlock = newBlock;
-                area.SetActiveBlock(newBlock);
-            }
-        }
-
-        private void RemoveBlock()
-        {
-            if (blocks.Count < 2) return;
-            blocks.Remove(TargetBlock);
-            TargetBlock = blocks[blocks.Count - 1];
         }
 
         private void ConfigureForm()
@@ -159,7 +139,7 @@ namespace Dropper
         //private bool LeftKey = false;
         //private bool DownKey = false;
         //private bool RightKey = false;
-        //private float Speed => TargetBlock.Weight / 10.0f;
+        //private float Speed => Blocks.Target.Weight / 10.0f;
         //private void KeyMovement()
         //{
         //    KeyDown += (s, ev) =>
@@ -180,7 +160,7 @@ namespace Dropper
         //    var timer = new Timer() { Interval = 10 };
         //    timer.Tick += (s, ev) =>
         //    {
-        //        if (TargetBlock.MouseDragging) return;
+        //        if (Blocks.Target.MouseDragging) return;
         //        float NX = 0.0f;
         //        float NY = 0.0f;
         //        if (UpKey) NY -= 1;
@@ -194,12 +174,12 @@ namespace Dropper
         //            NX = NX / length * Speed;
         //            NY = NY / length * Speed;
         //        }
-        //        TargetBlock.Constrain();
+        //        Blocks.Target.Constrain();
 
-        //        TargetBlock.Bounds = new RectangleF(new PointF(
-        //            TargetBlock.X + NX,
-        //            TargetBlock.Y + NY),
-        //            TargetBlock.Size);
+        //        Blocks.Target.Bounds = new RectangleF(new PointF(
+        //            Blocks.Target.X + NX,
+        //            Blocks.Target.Y + NY),
+        //            Blocks.Target.Size);
         //        area.gameArea.Invalidate();
         //    };
         //    timer.Start();

@@ -16,7 +16,7 @@ namespace Dropper
         private bool built;
         private Block targetBlock;
 
-        public void SetActiveBlock(Block block)
+        public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
             if (!built)
@@ -84,7 +84,7 @@ namespace Dropper
             collapsableMenu = QOL.GenericControls.Button(12f, "+", Color.White);
             QOL.Align.Right(collapsableMenu, resetWeight);
             Controls.Add(collapsableMenu);
-            collapsableMenu.MouseClick += (s, ev) => CollapseExpandedWeightPanel?.Invoke(this, EventArgs.Empty);
+            collapsableMenu.MouseClick += (s, ev) => CollapseExpandedWeightPanel.Invoke(this, EventArgs.Empty);
         }
 
         protected override void OnParentChanged(EventArgs e)

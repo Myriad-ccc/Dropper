@@ -116,7 +116,7 @@ namespace Dropper
                     VXChanged?.Invoke(0f);
                     VYChanged?.Invoke(0f);
                 }
-                Redraw?.Invoke();
+                Redraw.Invoke();
             };
             Timer.Start();
         }

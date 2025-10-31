@@ -11,7 +11,7 @@ namespace Dropper
         private bool built;
         private Block targetBlock;
 
-        public void SetActiveBlock(Block block)
+        public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
             if (!built)
@@ -61,7 +61,7 @@ namespace Dropper
                                         if (Math.Abs(targetBlock.Weight) <= Math.Sqrt(float.MaxValue))
                                         {
                                             targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 2);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -75,7 +75,7 @@ namespace Dropper
                                         if (Math.Abs(targetBlock.Weight) <= Math.Pow(float.MaxValue, 1.0f / 3.0f))
                                         {
                                             targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 3);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -86,7 +86,7 @@ namespace Dropper
                                     b.MouseClick += (s, ev) =>
                                     {
                                         targetBlock.Weight = targetBlock.Weight * Math.Sign(-1);
-                                        WeightChanged?.Invoke(targetBlock.Weight);
+                                        WeightChanged.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 3:
@@ -98,7 +98,7 @@ namespace Dropper
                                         if (targetBlock.Weight == (int)targetBlock.Weight && targetBlock.Weight >= 0 && targetBlock.Weight <= 16)
                                         {
                                             targetBlock.Weight = QOL.Factorial((int)targetBlock.Weight);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -113,7 +113,7 @@ namespace Dropper
                                     timer.Tick += (s, ev) =>
                                     {
                                         targetBlock.Weight = DateTime.Now.Second;
-                                        WeightChanged?.Invoke(targetBlock.Weight);
+                                        WeightChanged.Invoke(targetBlock.Weight);
                                     };
                                     b.MouseClick += (s, ev) =>
                                     {
@@ -161,7 +161,7 @@ namespace Dropper
                                         if (targetBlock.Weight > 0)
                                         {
                                             targetBlock.Weight = (float)Math.Sqrt(targetBlock.Weight);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -175,7 +175,7 @@ namespace Dropper
                                         if (targetBlock.Weight > 0)
                                         {
                                             targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 1.0f / 3.0f);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -186,7 +186,7 @@ namespace Dropper
                                     b.MouseClick += (s, ev) =>
                                     {
                                         targetBlock.Weight = (float)Math.PI;
-                                        WeightChanged?.Invoke(targetBlock.Weight);
+                                        WeightChanged.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 3:
@@ -198,7 +198,7 @@ namespace Dropper
                                     {
                                         if (targetBlock.Weight != 0)
                                             targetBlock.Weight = 1 / targetBlock.Weight;
-                                        WeightChanged?.Invoke(targetBlock.Weight);
+                                        WeightChanged.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 4:
@@ -217,7 +217,7 @@ namespace Dropper
                                             secondsDragged += updateRate / 1000.0f;
                                             float multiplier = Math.Max(1.0f, secondsDragged / 2.0f);
                                             targetBlock.Weight += (float)(5.0f / (1000.0f / updateRate) * Math.Pow(multiplier, 3));
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                         else
                                             secondsDragged = 0.0f;
@@ -272,7 +272,7 @@ namespace Dropper
                                         if (targetBlock.Weight > 0)
                                         {
                                             targetBlock.Weight = (float)Math.Log(targetBlock.Weight);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -286,7 +286,7 @@ namespace Dropper
                                         if (targetBlock.Weight > 0)
                                         {
                                             targetBlock.Weight = (float)Math.Log10(targetBlock.Weight);
-                                            WeightChanged?.Invoke(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
                                         }
                                     };
                                     break;
@@ -298,7 +298,7 @@ namespace Dropper
                                     b.MouseClick += (s, ev) =>
                                     {
                                         targetBlock.Weight = (float)Math.E;
-                                        WeightChanged?.Invoke(targetBlock.Weight);
+                                        WeightChanged.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 3:
@@ -313,7 +313,7 @@ namespace Dropper
                                         foreach (var ch in blockWeight)
                                             sum += (float)char.GetNumericValue(ch);
                                         targetBlock.Weight = QOL.ValidFloat32(sum) ? sum : targetBlock.Weight;
-                                        WeightChanged?.Invoke(targetBlock.Weight);
+                                        WeightChanged.Invoke(targetBlock.Weight);
                                     };
                                     break;
                                 case 4:

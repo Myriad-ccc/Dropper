@@ -15,15 +15,15 @@ namespace Dropper
         private bool built = false;
         private Block targetBlock;
 
-        public void SetActiveBlock(Block block)
+        public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
 
-            weightPanel.SetActiveBlock(targetBlock);
-            weightSlider.SetActiveBlock(targetBlock);
-            expandedWeightMenu.SetActiveBlock(targetBlock);
-            pivotPanel.SetActiveBlock(targetBlock);
-            gravityPanel.SetActiveBlock(targetBlock);
+            weightPanel.SetTarget(targetBlock);
+            weightSlider.SetTarget(targetBlock);
+            expandedWeightMenu.SetTarget(targetBlock);
+            pivotPanel.SetTarget(targetBlock);
+            gravityPanel.SetTarget(targetBlock);
         }
 
         public ToolbarPanel(Gravity gravity)

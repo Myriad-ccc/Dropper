@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Windows.Forms;
 
 namespace Dropper
 {
@@ -147,29 +148,38 @@ namespace Dropper
         private readonly Random random = new Random();
 
         public static List<Block> Stack { get; set; } = new List<Block>();
+        public Block Target { get; set; }
 
         public event Action<Block> ChangeFocus;
         public event Action<Block> ConfigureBlock;
 
-        private void AddBlock(bool? setActive = null)
+        public void Add(Block @new = null)
         {
-            Block newBlock = new Block();
-            Stack.Add(newBlock);
-            ConfigureBlock?.Invoke(newBlock);
+            Block block = @new ?? new Block();
+            Stack.Add(block);
+            ConfigureBlock.Invoke(block);
 
-            if (setActive == true)
+            if (Stack.Count == 1)
             {
-                newBlock.Active = true;
-                ChangeFocus?.Invoke(newBlock);
+                block.Active = true;
+                ChangeFocus.Invoke(block);
             }
         }
 
-        private void RemoveBlock(Block block, bool RandomRefocus = false)
+        public void Remove(bool RandomRefocus = false)
         {
-            if (Stack.Count < 2) return;
-            Stack.Remove(block);
-            var refocused = RandomRefocus ? Stack[random.Next(Stack.Count)] : Stack[Stack.Count - 1];
-            ChangeFocus?.Invoke(refocused);
+            Stack.Remove(Target);
+            Target = null;
+            var refocused =
+                RandomRefocus
+                ?  (Stack.Count > 0 ? Stack[random.Next(Stack.Count)] : null)
+                : (Stack.Count >= 1 ? Stack[Stack.Count-1] : null);
+            ChangeFocus.Invoke(refocused);
+        }
+
+        public void Split(Block block)
+        {
+            
         }
     }
 }

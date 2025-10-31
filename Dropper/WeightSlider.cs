@@ -13,7 +13,7 @@ namespace Dropper
         private bool built;
         private Block targetBlock;
 
-        public void SetActiveBlock(Block block)
+        public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
             if (!built)
@@ -51,7 +51,7 @@ namespace Dropper
                     targetBlock.Weight = barValues[bar.Value];
                 else
                     targetBlock.Weight = -barValues[bar.Value];
-                WeightChanged?.Invoke(targetBlock.Weight);
+                WeightChanged.Invoke(targetBlock.Weight);
             }
 
             var timer = new Timer() { Interval = 1000 };

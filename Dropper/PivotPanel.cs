@@ -15,7 +15,7 @@ namespace Dropper
 
         public PivotPanel(Gravity gravity) => Gravity = gravity;
 
-        public void SetActiveBlock(Block block)
+        public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
             if (!built)

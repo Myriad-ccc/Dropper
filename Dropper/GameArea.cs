@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -9,7 +10,7 @@ namespace Dropper
 {
     public class GameArea : CustomPanel
     {
-        public event Action<Block> ActiveBlockChanged;
+        public event Action<Block> FocusedBlockChanged;
         private bool debug = false;
 
         private readonly Random random = new Random();
@@ -22,7 +23,7 @@ namespace Dropper
                 var g = ev.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                foreach (var block in Form1.blocks)
+                foreach (var block in Blocks.Stack)
                 {
                     using (var blockBrush = new SolidBrush(block.Active ? block.ActiveColor : block.InactiveColor))
                         g.FillRectangle(
@@ -57,12 +58,12 @@ namespace Dropper
                         }
                 }
             };
-            Clicks(Form1.blocks);
+            Clicks(Blocks.Stack);
         }
 
-        public void Split(Block block)
+        private void Split(Block block)
         {
-            //Form1.blocks
+            // split here & have fun
         }
 
         private void Clicks(List<Block> blocks)
@@ -73,12 +74,12 @@ namespace Dropper
             MouseDown += (s, ev) =>
                 {
                     Block clicked = null;
-                    for (int i = 0; i < Form1.blocks.Count; i++)
+                    for (int i = 0; i < Blocks.Stack.Count; i++)
                     {
-                        if (Form1.blocks[i].Bounds.Contains(ev.Location))
+                        if (Blocks.Stack[i].Bounds.Contains(ev.Location))
                         {
-                            clicked = Form1.blocks[i];
-                            ActiveBlockChanged?.Invoke(Form1.blocks[i]);
+                            clicked = Blocks.Stack[i];
+                            FocusedBlockChanged.Invoke(Blocks.Stack[i]);
                             break;
                         }
                     }
@@ -112,10 +113,8 @@ namespace Dropper
                 };
             //TODO fix this shit
             /*
-             * Make crack split the block into 2 new Form1.blocks and randomly assign block focus
-             * Crack after terminal velocity impact
-             * Something with an egg
-             * MOVE THIS SHIT TO MAIN FORM?? Maybe
+             * Crack after terminal velocity impact?
+             * Something with an egg???
              */
 
             MouseUp += (s, ev) =>
@@ -152,7 +151,7 @@ namespace Dropper
                 float endX = (float)(block.W * random.NextDouble());
                 float endY = (float)(block.H * random.NextDouble());
 
-                while (Math.Abs(startX - endX) < 5 || Math.Abs(startY - endY) < 5)
+                while (Math.Abs(startX - endX) < block.W/10 || Math.Abs(startY - endY) < block.W/10)
                 {
                     endX = (float)(block.W * random.NextDouble());
                     endY = (float)(block.H * random.NextDouble());

@@ -45,7 +45,7 @@ namespace Dropper
                 if (card.On)
                     card.Toggle();
             Toggle();
-            Activated?.Invoke(DeckRow, DeckCol);
+            Activated.Invoke(DeckRow, DeckCol);
         }
 
         public static Card GetActive()

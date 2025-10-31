@@ -1,0 +1,2157 @@
+﻿using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class Area : CustomPanel
+    {
+        public ToolbarPanel toolBar;
+        public GameArea gameArea;
+        public Floor floor;
+
+        public void SetTarget(Block block)
+        {
+            toolBar.SetTarget(block);
+            gameArea.Invalidate();
+        }
+
+        public void Build(Gravity gravity)
+        {
+            toolBar = new ToolbarPanel(gravity);
+            gameArea = new GameArea();
+            floor = new Floor();
+
+            Controls.Add(toolBar);
+            Controls.Add(gameArea);
+            Controls.Add(floor);
+
+            toolBar.Height = 98;
+            toolBar.Dock = DockStyle.Top;
+
+            gameArea.BringToFront();
+            gameArea.Dock = DockStyle.Fill;
+
+            floor.Height = 32;
+            floor.Dock = DockStyle.Bottom;
+
+            gravity.Redraw += () => gameArea.Invalidate();
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+
+namespace Dropper
+{
+    public class Block
+    {
+        public RectangleF Bounds { get; set; } = new RectangleF(PointF.Empty, new SizeF(64, 64));
+        public PointF Location => Bounds.Location;
+        public SizeF Size => Bounds.Size;
+
+        public bool Active { get; set; } = false;
+        public bool MouseDragging { get; set; }
+        public Rectangle UserBounds { get; set; }
+
+        public Color ActiveColor { get; set; } = QOL.RGB(50);
+        public Color InactiveColor { get; set; } = QOL.RGB(50);
+        public Color ActiveBorderColor { get; set; } = QOL.RGB(163, 42, 42);
+        public Color InactiveBorderColor { get; set; } = QOL.RGB(25);
+
+        public float BorderWidth => (float)Math.Pow(W, 1f / 6f);
+
+        public float Weight { get; set; } = 100.0f;
+        public float OriginalWeight { get; set; }
+        public static Point StartPoint { get; set; }
+        public PointF MagneticCore { get; set; }
+
+        public float VX { get; set; } = 0.0f;
+        public float VY { get; set; } = 0.0f;
+
+        public float Area => W * H;
+        public float TerminalVelocity => (float)Math.Pow(Area * Math.Abs(Weight), 1f / 1.8f);
+
+        public float Restituion { get; set; } = 0.70f;
+
+        public bool CanBounce { get; set; } = true;
+        public List<(PointF start, PointF end, float sy)> Cracks { get; set; } = new List<(PointF start, PointF end, float sy)>();
+
+        public float X => Location.X;
+        public float Y => Location.Y;
+        public float W => Size.Width;
+        public float H => Size.Height;
+        public float Left => Bounds.Left;
+        public float Right => Bounds.Right;
+        public float Top => Bounds.Top;
+        public float Bottom => Bounds.Bottom;
+
+        public Block() { }
+
+        public enum GravityMode { Linear, Dynamic, Magnetic, None }
+        public GravityMode Gravity { get; set; } = GravityMode.Dynamic;
+
+        public void Constrain(int GX = 0, int GY = 0)
+        {
+            if (UserBounds == Rectangle.Empty) return;
+            float nx = X;
+            float ny = Y;
+            bool bouncingX = false;
+            bool bouncingY = false;
+            float deltaTime = QOL.GlobalTimerUpdateRate / 1000f;
+
+            if (Left <= UserBounds.Left)
+            {
+                nx = UserBounds.Left;
+                float VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (CanBounce && VX < -VTX && !bouncingX)
+                {
+                    VX = -VX * Restituion;
+                    bouncingX = true;
+                }
+                else
+                    ResetVX();
+            }
+
+            if (Right >= UserBounds.Right)
+            {
+                nx = UserBounds.Right - W;
+                float VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (CanBounce && !bouncingX && VX > VTX)
+                    VX = -VX * Restituion;
+                else
+                    ResetVX();
+            }
+
+            if (Top <= UserBounds.Top)
+            {
+                ny = UserBounds.Top;
+                float VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (CanBounce && !bouncingY && VY < -VTY)
+                {
+                    VY = -VY * Restituion;
+                    bouncingY = true;
+                }
+                else
+                    ResetVY();
+            }
+
+            if (Bottom >= UserBounds.Bottom)
+            {
+                ny = UserBounds.Bottom - H;
+                float VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * Dropper.Gravity.GravitationalConstant) : 0;
+
+                if (CanBounce && !bouncingY && VY > VTY)
+                    VY = -VY * Restituion;
+                else
+                    ResetVY();
+            }
+
+            Bounds = new RectangleF(new PointF(nx, ny), Size);
+        }
+
+        public void ResetVelocity()
+        {
+            ResetVX();
+            ResetVY();
+        }
+        public void ResetVX() => VX = 0;
+        public void ResetVY() => VY = 0;
+
+        public void DoubleSize()
+        {
+            float nw = W * 2f;
+            float nh = H * 2f;
+            float nx = X - W / 2f;
+            float ny = Y - H / 2f;
+
+            Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
+        }
+
+        public void HalveSize()
+        {
+            float nw = W / 2f;
+            float nh = H / 2f;
+            float nx = X + nw / 2f;
+            float ny = Y + nh / 2f;
+
+            Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
+        }
+    }
+
+    public class Blocks
+    {
+        private readonly Random random = new Random();
+
+        public static List<Block> Stack { get; set; } = new List<Block>();
+        public Block Target { get; set; }
+
+        public event Action<Block> ChangeFocus;
+        public event Action<Block> ConfigureBlock;
+
+        public void Add()
+        {
+            Block newB = new Block();
+            Stack.Add(newB);
+            ConfigureBlock.Invoke(newB);
+
+            if (Stack.Count == 0)
+            {
+                newB.Active = true;
+                ChangeFocus.Invoke(newB);
+            }
+        }
+
+        public void Remove(bool RandomRefocus = false)
+        {
+            Stack.Remove(Target);
+            var refocused = RandomRefocus ? Stack[random.Next(Stack.Count)] : (Stack.Count < 2 ? Stack[Stack.Count - 1] : null);
+            ChangeFocus.Invoke(refocused);
+        }
+
+        public void Split()
+        {
+            var copy = Target;
+            Remove();
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class Card : CustomButton
+    {
+        public bool On { get; set; } = false;
+        public static int CardWidth { get; set; } = 32;
+        public static int CardHeight { get; set; } = 32;
+
+        public static Card[,] deck;
+        public int DeckRow { get; set; }
+        public int DeckCol { get; set; }
+
+        private static readonly Color defaultBG = QOL.RGB(35);
+
+        public Card(int deckRow, int deckCol)
+        {
+            DeckRow = deckRow;
+            DeckCol = deckCol;
+
+            BackColor = defaultBG;
+            FlatStyle = FlatStyle.Popup;
+            Size = new Size(CardWidth, CardHeight);
+            TabStop = false;
+            UseCompatibleTextRendering = true;
+            TextAlign = ContentAlignment.TopCenter;
+            Font = new Font(QOL.VCROSDMONO, CardWidth / 2);
+
+            MouseClick += (s, ev) => SetActive();
+        }
+
+        public void Toggle()
+        {
+            On = !On;
+            BackColor = On ? Color.CornflowerBlue : defaultBG;
+        }
+
+        public static Action<int, int> Activated;
+        public void SetActive()
+        {
+            foreach (Card card in deck)
+                if (card.On)
+                    card.Toggle();
+            Toggle();
+            Activated.Invoke(DeckRow, DeckCol);
+        }
+
+        public static Card GetActive()
+        {
+            foreach (Card card in deck)
+                if (card.On)
+                    return card;
+            return null;
+        }
+    }
+}
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class ClickFilter : IMessageFilter
+    {
+        public Control TargetControl;
+
+        public ClickFilter(Control targetControl) => TargetControl = targetControl;
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            const int LBM_code = 0x0201;
+
+            if (m.Msg == LBM_code)
+            {
+                Control clickedControl = Control.FromHandle(m.HWnd);
+
+                if (clickedControl != TargetControl && !TargetControl.Contains(clickedControl))
+                    TargetControl.FindForm().Focus();
+            }
+            return false;
+        }
+    }
+}
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class CustomButton : Button
+    {
+        public CustomButton()
+        {
+            DoubleBuffered = true;
+            TabStop = false;
+        }
+
+        protected override bool ShowFocusCues => false;
+        protected override bool ShowKeyboardCues => false;
+    }
+}
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class CustomPanel : Panel
+    {
+        public CustomPanel()
+        {
+            DoubleBuffered = true;
+            TabStop = false;
+            SetStyle(
+                ControlStyles.UserPaint |
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer, true);
+            UpdateStyles();
+        }
+        protected override bool ShowFocusCues => false;
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public partial class Form1 : Form
+    {
+        private Blocks Blocks;
+        private readonly Gravity gravity = new Gravity();
+
+        private TitleBar titleBar;
+        private Area area;
+
+        public Form1() => InitializeComponent();
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            ConfigureForm();
+            LoadArea();
+            Blocks = new Blocks();
+            Blocks.ChangeFocus += block => ChangeBlockFocused(block);
+            Blocks.ConfigureBlock += ConfigureBlock;
+            Blocks.Add();
+            gravity.Start(Blocks.Stack);
+            //KeyMovement();
+            area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
+            HoodooVoodooBlockMagic();
+        }
+
+        private void ChangeBlockFocused(Block block)
+        {
+            if (block == Blocks.Target) 
+                return;
+
+            if (Blocks.Target != null)
+                Blocks.Target.Active = false;
+            Blocks.Target = block;
+            Blocks.Target.Active = true;
+
+            area.SetTarget(block);
+            area.gameArea.Invalidate();
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Enter)
+            {
+                Blocks.Add();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void HoodooVoodooBlockMagic()
+        {
+            bool spaceDown = false;
+            bool shiftDown = false;
+            bool eventResolved = false;
+
+            KeyDown += (s, ev) =>
+            {
+                if (eventResolved) return;
+
+                if (ev.KeyCode == Keys.Space)
+                {
+                    eventResolved = true;
+                    if (ev.Shift)
+                    {
+                        if (Blocks.Target.W / 2 >= 4 && Blocks.Target.H / 2 >= 4)
+                            Blocks.Target.HalveSize();
+                    }
+                    else
+                        if (Blocks.Target.W <= area.gameArea.Width / 2 && Blocks.Target.H <= area.gameArea.Height / 2)
+                        Blocks.Target.DoubleSize();
+                    area.gameArea.Invalidate();
+                }
+                if (ev.KeyCode == Keys.Back)
+                {
+                    Blocks.Remove();
+                    area.gameArea.Invalidate();
+                }
+            };
+
+            KeyUp += (s, ev) =>
+            {
+                if (ev.KeyCode == Keys.Space)
+                    eventResolved = false;
+            };
+        }
+
+        private void LoadArea()
+        {
+            area = new Area
+            {
+                Size = new Size(ClientSize.Width, ClientSize.Height - titleBar.Height),
+                Location = new Point(0, titleBar.Height)
+            };
+            area.Build(gravity);
+            Controls.Add(area);
+        }
+
+        private void ConfigureForm()
+        {
+            Text = "Dropper";
+            FormBorderStyle = FormBorderStyle.None;
+            Size = new Size(1024, 896);
+            BackColor = QOL.RGB(20);
+            KeyPreview = true;
+            DoubleBuffered = true;
+            CenterToScreen();
+
+            titleBar = new TitleBar(new Size(Width, 64));
+            Controls.Add(titleBar);
+
+            FormClosing += (s, ev) =>
+            {
+                if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
+                    Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
+            };
+        }
+        private void ConfigureBlock(Block block)
+        {
+            block.OriginalWeight = block.Weight;
+            block.UserBounds = area.gameArea.ClientRectangle;
+
+            Block.StartPoint = new Point(
+                (int)(area.gameArea.Width / 2 - block.W / 2),
+                (int)(area.gameArea.ClientSize.Height - block.H));
+            block.Bounds = new RectangleF(Block.StartPoint, block.Size);
+
+            block.MagneticCore = new Point(
+                (int)(area.gameArea.Width / 2 - block.W / 2),
+                (int)(area.gameArea.Height / 2 - block.H / 2));
+        }
+
+        //private bool UpKey = false;
+        //private bool LeftKey = false;
+        //private bool DownKey = false;
+        //private bool RightKey = false;
+        //private float Speed => Blocks.Target.Weight / 10.0f;
+        //private void KeyMovement()
+        //{
+        //    KeyDown += (s, ev) =>
+        //    {
+        //        if (ev.KeyCode == Keys.W && !UpKey) UpKey = true;
+        //        if (ev.KeyCode == Keys.A && !LeftKey) LeftKey = true;
+        //        if (ev.KeyCode == Keys.S && !DownKey) DownKey = true;
+        //        if (ev.KeyCode == Keys.D && !RightKey) RightKey = true;
+        //    };
+        //    KeyUp += (s, ev) =>
+        //    {
+        //        if (ev.KeyCode == Keys.W) UpKey = false;
+        //        if (ev.KeyCode == Keys.A) LeftKey = false;
+        //        if (ev.KeyCode == Keys.S) DownKey = false;
+        //        if (ev.KeyCode == Keys.D) RightKey = false;
+        //    };
+
+        //    var timer = new Timer() { Interval = 10 };
+        //    timer.Tick += (s, ev) =>
+        //    {
+        //        if (Blocks.Target.MouseDragging) return;
+        //        float NX = 0.0f;
+        //        float NY = 0.0f;
+        //        if (UpKey) NY -= 1;
+        //        if (LeftKey) NX -= 1;
+        //        if (DownKey) NY += 1;
+        //        if (RightKey) NX += 1;
+
+        //        if (NX != 0 || NY != 0)
+        //        {
+        //            float length = (float)Math.Sqrt(NX * NX + NY * NY);
+        //            NX = NX / length * Speed;
+        //            NY = NY / length * Speed;
+        //        }
+        //        Blocks.Target.Constrain();
+
+        //        Blocks.Target.Bounds = new RectangleF(new PointF(
+        //            Blocks.Target.X + NX,
+        //            Blocks.Target.Y + NY),
+        //            Blocks.Target.Size);
+        //        area.gameArea.Invalidate();
+        //    };
+        //    timer.Start();
+        //}
+    }
+}
+namespace Dropper
+{
+    partial class Form1
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(122, 60);
+            this.Name = "Form1";
+            this.Text = "Form1";
+            this.Load += new System.EventHandler(this.Form1_Load);
+            this.ResumeLayout(false);
+
+        }
+
+        #endregion
+    }
+}
+
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class ExpandedWeightMenu : CustomPanel
+    {
+        public event Action<float> WeightChanged;
+
+        private bool built;
+        private Block targetBlock;
+
+        public void SetTarget(Block block)
+        {
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+        }
+        public ExpandedWeightMenu()
+        {
+            if (built)
+                Paint += (s, ev) =>
+                {
+                    using (Pen borderPen = new Pen(QOL.RandomColor(), 1f))
+                        ev.Graphics.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 2);
+                };
+        }
+
+        private void Build()
+        {
+            Visible = false;
+            BackColor = Color.Transparent;
+
+            Card[,] buttons = new Card[6, 3];
+            Size = new Size(buttons.GetLength(0) * 24, buttons.GetLength(1) * 24);
+            for (int r = 0; r < buttons.GetLength(0); r++)
+            {
+                for (int c = 0; c < buttons.GetLength(1); c++)
+                {
+                    int x = r;
+                    int y = c;
+                    var b = QOL.GenericControls.Button(null, "-", Color.Gray);
+                    b.Location = new Point(x * 24, y * 24);
+
+                    switch (y)
+                    {
+                        case 0:
+                            switch (x)
+                            {
+                                case 0:
+                                    b.Name = "squareWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.Crimson;
+                                    b.Text = "2";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (Math.Abs(targetBlock.Weight) <= Math.Sqrt(float.MaxValue))
+                                        {
+                                            targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 2);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 1:
+                                    b.Name = "cubeWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.Salmon;
+                                    b.Text = "3";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (Math.Abs(targetBlock.Weight) <= Math.Pow(float.MaxValue, 1.0f / 3.0f))
+                                        {
+                                            targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 3);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 2:
+                                    b.Name = "flipWeight";
+                                    b.ForeColor = Color.Tomato;
+                                    b.Text = "||";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        targetBlock.Weight = targetBlock.Weight * Math.Sign(-1);
+                                        WeightChanged.Invoke(targetBlock.Weight);
+                                    };
+                                    break;
+                                case 3:
+                                    b.Name = "factorializeWeight";
+                                    b.ForeColor = Color.PaleVioletRed;
+                                    b.Text = "!";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (targetBlock.Weight == (int)targetBlock.Weight && targetBlock.Weight >= 0 && targetBlock.Weight <= 16)
+                                        {
+                                            targetBlock.Weight = QOL.Factorial((int)targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 4:
+                                    b.Name = "clockIncrementingWeight";
+                                    b.UseCompatibleTextRendering = true;
+                                    b.Font = new Font(b.Font.FontFamily, 14f);
+                                    b.ForeColor = Color.Beige;
+                                    b.Text = "⏱️";
+                                    bool on = false;
+                                    var timer = new Timer() { Interval = 1000 };
+                                    timer.Tick += (s, ev) =>
+                                    {
+                                        targetBlock.Weight = DateTime.Now.Second;
+                                        WeightChanged.Invoke(targetBlock.Weight);
+                                    };
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        on = !on;
+                                        if (on)
+                                        {
+                                            b.ForeColor = Color.OrangeRed;
+                                            timer.Start();
+                                        }
+                                        else
+                                        {
+                                            b.ForeColor = Color.Beige;
+                                            timer.Stop();
+                                        }
+                                    };
+                                    break;
+                                case 5:
+
+                                    break;
+                                case 6:
+
+                                    break;
+                                case 7:
+
+                                    break;
+                                case 8:
+
+                                    break;
+                                case 9:
+
+                                case 10:
+
+                                    break;
+                            }
+                            break;
+                        case 1:
+                            switch (x)
+                            {
+                                case 0:
+                                    b.Name = "squareRootWeight";
+                                    b.ForeColor = Color.DarkSlateBlue;
+                                    b.Text = "√";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (targetBlock.Weight > 0)
+                                        {
+                                            targetBlock.Weight = (float)Math.Sqrt(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 1:
+                                    b.Name = "cubeRootWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.Silver;
+                                    b.Text = "∛";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (targetBlock.Weight > 0)
+                                        {
+                                            targetBlock.Weight = (float)Math.Pow(targetBlock.Weight, 1.0f / 3.0f);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 2:
+                                    b.Name = "piWeight";
+                                    b.ForeColor = Color.CadetBlue;
+                                    b.Text = "π";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        targetBlock.Weight = (float)Math.PI;
+                                        WeightChanged.Invoke(targetBlock.Weight);
+                                    };
+                                    break;
+                                case 3:
+                                    b.Name = "reciprocateWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.BlueViolet;
+                                    b.Text = "/";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (targetBlock.Weight != 0)
+                                            targetBlock.Weight = 1 / targetBlock.Weight;
+                                        WeightChanged.Invoke(targetBlock.Weight);
+                                    };
+                                    break;
+                                case 4:
+                                    b.Name = "accumulateWeight";
+                                    b.ForeColor = Color.Gold;
+                                    b.Text = "⌖";
+
+                                    float secondsDragged = 0;
+                                    float weightPerSecond = 0;
+                                    int updateRate = 100;
+                                    var timer = new Timer() { Interval = updateRate };
+                                    timer.Tick += (s, ev) =>
+                                    {
+                                        if (targetBlock.MouseDragging)
+                                        {
+                                            secondsDragged += updateRate / 1000.0f;
+                                            float multiplier = Math.Max(1.0f, secondsDragged / 2.0f);
+                                            targetBlock.Weight += (float)(5.0f / (1000.0f / updateRate) * Math.Pow(multiplier, 3));
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                        else
+                                            secondsDragged = 0.0f;
+                                    };
+                                    bool accumulatorOn = false;
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        accumulatorOn = !accumulatorOn;
+                                        if (accumulatorOn)
+                                        {
+                                            timer.Start();
+                                            b.ForeColor = Color.LightSeaGreen;
+                                        }
+                                        else
+                                        {
+                                            timer.Stop();
+                                            b.ForeColor = Color.Gold;
+                                        }
+                                    };
+
+                                    break;
+                                case 5:
+
+                                    break;
+                                case 6:
+
+                                    break;
+                                case 7:
+
+                                    break;
+                                case 8:
+
+                                    break;
+                                case 9:
+
+                                    break;
+                                case 10:
+
+                                    break;
+                            }
+                            break;
+                        case 2:
+                            switch (x)
+                            {
+                                case 0:
+                                    b.Name = "logWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 8f);
+                                    b.ForeColor = Color.DeepPink;
+                                    b.Text = "ln";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (targetBlock.Weight > 0)
+                                        {
+                                            targetBlock.Weight = (float)Math.Log(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 1:
+                                    b.Name = "naturalLogWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 8f);
+                                    b.ForeColor = Color.DarkTurquoise;
+                                    b.Text = "log";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        if (targetBlock.Weight > 0)
+                                        {
+                                            targetBlock.Weight = (float)Math.Log10(targetBlock.Weight);
+                                            WeightChanged.Invoke(targetBlock.Weight);
+                                        }
+                                    };
+                                    break;
+                                case 2:
+                                    b.Name = "eulerWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.LightYellow;
+                                    b.Text = "e";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        targetBlock.Weight = (float)Math.E;
+                                        WeightChanged.Invoke(targetBlock.Weight);
+                                    };
+                                    break;
+                                case 3:
+                                    b.Name = "sumDigitsOfWeight";
+                                    b.Font = new Font(b.Font.FontFamily, 16f);
+                                    b.ForeColor = Color.ForestGreen;
+                                    b.Text = "Σ";
+                                    b.MouseClick += (s, ev) =>
+                                    {
+                                        string blockWeight = Math.Abs(targetBlock.Weight).ToString();
+                                        float sum = 0f;
+                                        foreach (var ch in blockWeight)
+                                            sum += (float)char.GetNumericValue(ch);
+                                        targetBlock.Weight = QOL.ValidFloat32(sum) ? sum : targetBlock.Weight;
+                                        WeightChanged.Invoke(targetBlock.Weight);
+                                    };
+                                    break;
+                                case 4:
+
+                                    break;
+                                case 5:
+
+                                    break;
+                                case 6:
+
+                                    break;
+                                case 7:
+
+                                    break;
+                                case 8:
+
+                                    break;
+                                case 9:
+
+                                    break;
+                                case 10:
+
+                                    break;
+                            }
+                            break;
+                    }
+                    Controls.Add(b);
+                }
+            }
+        }
+    }
+}
+namespace Dropper
+{
+    public class Floor : CustomPanel
+    {
+        public Floor()
+        {
+            BackColor = QOL.RGB(40);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Media;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class GameArea : CustomPanel
+    {
+        public event Action<Block> FocusedBlockChanged;
+        private bool debug = false;
+
+        private readonly Random random = new Random();
+
+        public GameArea()
+        {
+            BackColor = QOL.RGB(20);
+            Paint += (s, ev) =>
+            {
+                var g = ev.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                foreach (var block in Blocks.Stack)
+                {
+                    using (var blockBrush = new SolidBrush(block.Active ? block.ActiveColor : block.InactiveColor))
+                        g.FillRectangle(
+                            blockBrush,
+                            block.Bounds.X,
+                            block.Bounds.Y,
+                            block.Bounds.Width,
+                            block.Bounds.Height);
+
+                    DrawCracks(g, block);
+
+                    using (var borderPen = new Pen(block.Active ? block.ActiveBorderColor : block.InactiveBorderColor, (float)block.BorderWidth))
+                        g.DrawRectangle(
+                            borderPen,
+                            block.Bounds.X,
+                            block.Bounds.Y,
+                            block.Bounds.Width,
+                            block.Bounds.Height);
+
+                    if (debug)
+                        using (var brush = new SolidBrush(Color.IndianRed))
+                        {
+                            var font = new Font(QOL.VCROSDMONO, 20f);
+                            var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                            g.DrawString(
+                                $"{block.Weight:F0}",
+                                new Font(QOL.VCROSDMONO, 16f),
+                                brush,
+                                new PointF(
+                                    block.Left + size.Width / 8,
+                                    block.Top + size.Height / 2));
+                        }
+                }
+            };
+            Clicks(Blocks.Stack);
+        }
+
+        private void Clicks(List<Block> blocks)
+        {
+            Block draggable = null;
+            PointF dragOffset = PointF.Empty;
+
+            MouseDown += (s, ev) =>
+                {
+                    Block clicked = null;
+                    for (int i = 0; i < Blocks.Stack.Count; i++)
+                    {
+                        if (Blocks.Stack[i].Bounds.Contains(ev.Location))
+                        {
+                            clicked = Blocks.Stack[i];
+                            FocusedBlockChanged.Invoke(Blocks.Stack[i]);
+                            break;
+                        }
+                    }
+
+                    if (ev.Button == MouseButtons.Left)
+                    {
+                        if (clicked != null)
+                        {
+                            draggable = clicked;
+                            draggable.MouseDragging = true;
+                            draggable.ResetVelocity();
+                            dragOffset = new PointF(ev.Location.X - draggable.X, ev.Location.Y - draggable.Y);
+                        }
+                    }
+
+                    if (ev.Button == MouseButtons.Right)
+                    {
+                        if (clicked != null)
+                        {
+                            if (clicked.Cracks.Count >= 2)
+                            {
+                                clicked.Cracks.Clear();
+                                var sp = new SoundPlayer(Properties.Resources.Hector);
+                                sp.Play();
+                            }
+                            else
+                                CrackBlock(clicked);
+                        }
+                    }
+                };
+            //TODO fix this shit
+            /*
+             * Make crack split the block into 2 new Form1.blocks and randomly assign block focus
+             * Crack after terminal velocity impact
+             * Something with an egg
+             * MOVE THIS SHIT TO MAIN FORM?? Maybe
+             */
+
+            MouseUp += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left && draggable != null)
+                {
+                    draggable.MouseDragging = false;
+                    draggable = null;
+                }
+            };
+
+            MouseMove += (s, ev) =>
+            {
+                if (draggable == null) return;
+
+                float dx = ev.X - dragOffset.X;
+                float dy = ev.Y - dragOffset.Y;
+
+                draggable.Bounds = new RectangleF(
+                    new PointF(dx, dy),
+                    draggable.Size);
+                draggable.Constrain();
+
+                Invalidate();
+            };
+        }
+
+        private void CrackBlock(Block block, int cracks = 1)
+        {
+            for (int i = 0; i < cracks; i++)
+            {
+                float startX = (float)(block.W * random.NextDouble());
+                float startY = (float)(block.H * random.NextDouble());
+                float endX = (float)(block.W * random.NextDouble());
+                float endY = (float)(block.H * random.NextDouble());
+
+                while (Math.Abs(startX - endX) < 5 || Math.Abs(startY - endY) < 5)
+                {
+                    endX = (float)(block.W * random.NextDouble());
+                    endY = (float)(block.H * random.NextDouble());
+                }
+                var start = new PointF(startX, startY);
+                var end = new PointF(endX, endY);
+
+                float sy = (float)(random.NextDouble() + 1);
+
+                block.Cracks.Add((start, end, sy));
+            }
+        }
+
+        private void DrawCracks(Graphics g, Block block)
+        {
+            Bitmap crackBitMap = Properties.Resources.Crack;
+
+            var crackRegion = block.Bounds;
+            crackRegion.Inflate(-2, -2);
+            g.SetClip(crackRegion);
+
+            var blockState = g.Save();
+
+            g.TranslateTransform(block.Left, block.Top);
+
+            foreach (var (start, end, sy) in block.Cracks)
+            {
+                var crackState = g.Save();
+
+                g.TranslateTransform(start.X, start.Y);
+
+                float dx = end.X - start.X;
+                float dy = end.Y - start.Y;
+
+                float angle = (float)Math.Atan2(dy, dx) * (180.0f / (float)Math.PI);
+                float length = (float)Math.Sqrt(dx * dx + dy * dy);
+                if (length == 0) continue;
+
+                float scaleX = length / crackBitMap.Width;
+                float scaleY = sy;
+
+                g.RotateTransform(angle);
+                g.ScaleTransform(scaleX, scaleY);
+
+                g.DrawImage(crackBitMap, 0, -crackBitMap.Height / 2f);
+
+                g.Restore(crackState);
+            }
+            g.Restore(blockState);
+
+            g.ResetClip();
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class Gravity
+    {
+        public int X { get; set; } = 0;
+        public int Y { get; set; } = 1;
+
+        public static readonly float GravitationalConstant = 16f;
+
+        public Timer Timer { get; set; } = new Timer() { Interval = QOL.GlobalTimerUpdateRate };
+        public event Action<float> VXChanged;
+        public event Action<float> VYChanged;
+
+        public event Action Redraw;
+
+        public void Apply(Block block)
+        {
+            switch (block.Gravity)
+            {
+                case Block.GravityMode.Linear:
+                    LinearGravity(block);
+                    break;
+                case Block.GravityMode.Dynamic:
+                    DynamicGravity(block);
+                    break;
+                case Block.GravityMode.Magnetic:
+                    MagneticGravity(block);
+                    break;
+            }
+        }
+
+        private void LinearGravity(Block block)
+        {
+            block.Bounds = new RectangleF(
+                new PointF(
+                    block.X + block.Weight * X,
+                    block.Y + block.Weight * Y),
+                block.Size);
+        }
+
+        private void DynamicGravity(Block block)
+        {
+            float deltaTime = QOL.GlobalTimerUpdateRate / 1000f;
+
+            block.VX += block.Weight * deltaTime * GravitationalConstant * X;
+            block.VY += block.Weight * deltaTime * GravitationalConstant * Y;
+
+            if (block.Weight > 0)
+            {
+                block.VX = Math.Min(block.VX, block.TerminalVelocity);
+                block.VY = Math.Min(block.VY, block.TerminalVelocity);
+            }
+            if (block.Weight < 0)
+            {
+                block.VX = Math.Max(block.VX, -block.TerminalVelocity);
+                block.VY = Math.Max(block.VY, -block.TerminalVelocity);
+            }
+
+            block.Bounds = new RectangleF(
+                new PointF(
+                    block.X + block.VX * deltaTime,
+                    block.Y + block.VY * deltaTime),
+                block.Size);
+        }
+
+        private void MagneticGravity(Block block)
+        {
+            float stepX = 0f;
+            float stepY = 0f;
+            if (block.X != block.MagneticCore.X)
+            {
+                float dx = block.MagneticCore.X - block.X;
+                stepX = Math.Min(Math.Abs(dx), block.Weight) * Math.Sign(dx);
+            }
+            if (block.Y != block.MagneticCore.Y)
+            {
+                float dy = block.MagneticCore.Y - block.Y;
+                stepY = Math.Min(Math.Abs(dy), block.Weight) * Math.Sign(dy);
+            }
+
+            block.Bounds = new RectangleF(
+                new PointF(
+                    block.X + stepX,
+                    block.Y + stepY),
+                block.Size);
+        }
+
+        public void Start(List<Block> blocks)
+        {
+            Timer.Tick += (s, ev) =>
+            {
+                if (blocks == null || blocks.Count == 0) return;
+
+                foreach (Block block in blocks)
+                {
+                    if (!block.MouseDragging) //&& block.Active
+                    {
+                        Apply(block);
+                        block.Constrain(X, Y);
+                    }
+                }
+
+                Block active = blocks.Find(x => x.Active);
+                if (active != null && active.Gravity == Block.GravityMode.Dynamic)
+                {
+                    VXChanged?.Invoke(active.VX);
+                    VYChanged?.Invoke(active.VY);
+                }
+                else
+                {
+                    VXChanged?.Invoke(0f);
+                    VYChanged?.Invoke(0f);
+                }
+                Redraw.Invoke();
+            };
+            Timer.Start();
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class GravityPanel : CustomPanel
+    {
+        public Label displayVX, displayVY;
+        //private Action GravityModeUpdated;
+
+        private bool built;
+        private Block targetBlock;
+
+        public void SetTarget(Block block)
+        {
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+        }
+
+        private void Build()
+        {
+            ForeColor = Color.White;
+            BackColor = Color.Transparent;
+            Width = 1024;
+            Height = 100;
+            Paint += (s, ev) =>
+            {
+                using (var pen = new Pen(BackColor, 1f))
+                    ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            };
+
+            var gravityModes = Enum.GetValues(typeof(Block.GravityMode)).Cast<object>().ToArray();
+
+            int gravityModeIndex = Array.IndexOf(gravityModes, Block.GravityMode.Dynamic);
+            targetBlock.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
+            var gravityChoice = new CustomButton()
+            {
+                UseCompatibleTextRendering = true,
+                TabStop = false,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                BackColor = QOL.RGB(20),
+                Text = gravityModes[gravityModeIndex].ToString(),
+                AutoSize = true,
+            };
+            gravityChoice.MouseClick += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left)
+                {
+                    gravityModeIndex++;
+                    if (gravityModeIndex == gravityModes.Length)
+                        gravityModeIndex = 0;
+
+                    targetBlock.Gravity = (Block.GravityMode)gravityModes[gravityModeIndex];
+                    gravityChoice.Text = gravityModes[gravityModeIndex].ToString();
+                    //GravityModeUpdated.Invoke();
+                }
+            };
+            Controls.Add(gravityChoice);
+
+            displayVX = new Label()
+            {
+                ForeColor = Color.White,
+                Font = new Font(QOL.VCROSDMONO, 16f)
+            };
+            QOL.Align.Bottom.Center(displayVX, gravityChoice, 1);
+            Controls.Add(displayVX);
+
+            displayVY = new Label()
+            {
+                ForeColor = Color.White,
+                Font = new Font(QOL.VCROSDMONO, 16f),
+                AutoSize = true,
+            };
+            QOL.Align.Bottom.Center(displayVY, displayVX, 1);
+            Controls.Add(displayVY);
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class PivotPanel : CustomPanel
+    {
+        private readonly Random random = new Random();
+
+        private readonly Gravity Gravity;
+
+        private bool built;
+        private Block targetBlock;
+
+        public PivotPanel(Gravity gravity) => Gravity = gravity;
+
+        public void SetTarget(Block block)
+        {
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+            // flip cards according to new current target block's pivots
+        }
+
+        private void Build()
+        {
+            ForeColor = Color.White;
+            BackColor = Color.Transparent;
+            Width = 1024;
+            Height = 100;
+            Paint += (s, ev) =>
+            {
+                using (var pen = new Pen(BackColor, 1f))
+                    ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            };
+
+            var pivots = new CustomPanel
+            {
+                BackColor = QOL.RGB(60),
+                Width = Card.CardWidth * 3,
+                Height = Card.CardHeight * 3,
+            };
+            Controls.Add(pivots);
+
+            string[,] directions =
+            {
+                { "↖", "↑", "↗" },
+                { "←", "◎", "→" },
+                { "↙", "↓", "↘" }
+            };
+
+            var cards = new Card[3, 3];
+            int[] offsets = { -1, 0, 1 };
+
+            for (int row = 0; row < cards.GetLength(0); row++)
+            {
+                for (int col = 0; col < cards.GetLength(1); col++)
+                {
+                    int r = row;
+                    int c = col;
+
+                    cards[r, c] = new Card(r, c)
+                    {
+                        Location = new Point(c * Card.CardWidth, r * Card.CardHeight),
+                        Text = directions[r, c]
+                    };
+                    pivots.Controls.Add(cards[r, c]);
+
+                    if (r == 2 && c == 1)
+                        cards[r, c].Toggle();
+                }
+            }
+            Card.deck = cards;
+
+            var dissipateVX = new Timer() { Interval = 100 };
+            dissipateVX.Tick += (s, ev) =>
+            {
+                if (Math.Abs(targetBlock.VX) <= 0.1)
+                {
+                    dissipateVX.Stop();
+                    targetBlock.VX = 0;
+                }
+                targetBlock.VX -= targetBlock.VX / 10;
+            };
+            var dissipateVY = new Timer() { Interval = 100 };
+            dissipateVY.Tick += (s, ev) =>
+            {
+                if (Math.Abs(targetBlock.VY) <= 0.1)
+                {
+                    dissipateVY.Stop();
+                    targetBlock.VY = 0;
+                }
+                targetBlock.VY -= targetBlock.VY / 10;
+            };
+            Card.Activated = (row, col) =>
+            {
+                int nx = offsets[col];
+                int ny = offsets[row];
+
+                if (nx != Gravity.X || ny != Gravity.Y)
+                {
+                    Gravity.X = nx;
+                    Gravity.Y = ny;
+
+                    if (nx != 0)
+                        dissipateVX.Stop();
+                    else
+                        dissipateVX.Start();
+
+                    if (ny != 0)
+                        dissipateVY.Stop();
+                    else
+                        dissipateVY.Start();
+                }
+            };
+
+            Button[] buttons = new CustomButton[Height / Card.CardHeight];
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                int x = i;
+                buttons[x] = QOL.GenericControls.Button(16f, null, Color.Gray, new Size(Card.CardWidth, Card.CardHeight));
+                buttons[x].Location = new Point(pivots.Right + 1, i * Card.CardHeight);
+
+                switch (x)
+                {
+                    case 0:
+                        buttons[x].Name = "RandomPivot";
+                        buttons[x].UseCompatibleTextRendering = false;
+                        buttons[x].TextAlign = ContentAlignment.TopCenter;
+                        buttons[x].Text = "🎲";
+                        buttons[x].ForeColor = Color.Green;
+                        var randomPivotTimer = new Timer() { Interval = 1001 };
+                        randomPivotTimer.Tick += (s, ev) => cards[random.Next(cards.GetLength(0)), random.Next(cards.GetLength(1))].SetActive();
+
+                        bool randomPivotOn = false;
+                        Card copyActiveCard = null;
+                        var copyColor = buttons[x].ForeColor;
+                        buttons[x].MouseDown += (s, ev) =>
+                        {
+                            if (ev.Button == MouseButtons.Left)
+                            {
+                                randomPivotOn = !randomPivotOn;
+                                if (randomPivotOn)
+                                {
+                                    copyActiveCard = Card.GetActive();
+                                    randomPivotTimer.Start();
+                                    buttons[x].ForeColor = Color.FromArgb(255, 42, 96, 163);
+                                }
+                                else
+                                {
+                                    randomPivotTimer.Stop();
+                                    randomPivotTimer.Interval = 1001;
+
+                                    copyActiveCard?.SetActive();
+                                    buttons[x].ForeColor = copyColor;
+                                }
+                            }
+                            if (ev.Button == MouseButtons.Right && randomPivotTimer.Interval > 1)
+                                randomPivotTimer.Interval -= 100;
+                        };
+                        break;
+                    case 1:
+
+                        break;
+                    case 2:
+
+                        break;
+                }
+                Controls.Add(buttons[x]);
+            }
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    internal static class Program
+    {
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public static class QOL
+    {
+        private static readonly Random random = new Random();
+        public static readonly string VCROSDMONO = "VCR OSD Mono";
+        public const int GlobalTimerUpdateRate = 10;
+
+        public static int RandomInt(int max, int? min = null) => random.Next(min ?? 0, max);
+
+        public static Color RandomColor() => Color.FromArgb(255, RandomInt(256), RandomInt(256), RandomInt(256));
+        public static Color RGB(int v1, int? v2 = null, int? v3 = null) => Color.FromArgb(255, v1, v2 ?? v1, v3 ?? v1);
+
+        public static void WriteOut(object o) => MessageBox.Show($"{o}");
+        public static void QuickWriteOut(Func<object> getter, Control surface)
+        {
+            surface.MouseClick += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Right)
+                    WriteOut(getter());
+            };
+        }
+
+        public static void ClampControlWidth(Control control, int? gap = null)
+        {
+            if (control.Controls.Count == 0) return;
+            int rightMost = control.Controls.Cast<Control>().Max(x => x.Right);
+            control.Bounds = new Rectangle(control.Location, new Size(rightMost + (gap ?? 0), control.Height));
+        }
+
+        public static bool ValidInt32(int num) => num > int.MinValue && num < int.MaxValue;
+        public static bool ValidFloat32(float num) => !float.IsNaN(num) && !float.IsInfinity(num);
+        public static bool ValidDouble64(float num) => num > double.MinValue && num < double.MaxValue;
+
+        public static int Factorial(int num)
+        {
+            if (num == 0 || num == 1) return 1;
+            return num *= Factorial(num - 1);
+        }
+
+        public static class Align
+        {
+            private static int CheckGap(int? gap) => gap ?? 0;
+
+            public static void Left(Control thisControl, Control otherControl, int? gap = null, bool? top = null)
+            {
+                int multiplier = top == false ? 1 : 0;
+                thisControl.Location = new Point(
+                    otherControl.Location.X - otherControl.Width - CheckGap(gap),
+                    otherControl.Location.Y + multiplier * (otherControl.Height - thisControl.Height));
+            }
+
+            public static void Right(Control thisControl, Control otherControl, int? gap = null, bool? top = null)
+            {
+                int multiplier = top == false ? 1 : 0;
+                thisControl.Location = new Point(
+                    otherControl.Location.X + otherControl.Width + CheckGap(gap),
+                    otherControl.Location.Y + multiplier * (otherControl.Height - thisControl.Height));
+            }
+
+            public static class Top
+            {
+                public static void Left(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X - thisControl.Width,
+                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+
+                public static void Center(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X + otherControl.Width / 2 - thisControl.Width / 2,
+                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+
+                public static void LeftCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X - thisControl.Width / 2,
+                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+
+                public static void RightCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X + otherControl.Width - thisControl.Width / 2,
+                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+
+                public static void Right(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X + otherControl.Width,
+                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+            }
+
+            public static class Bottom
+            {
+                public static void Left(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X,
+                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+
+                public static void Center(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X,
+                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+
+                public static void LeftCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X - thisControl.Width / 2,
+                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+
+                public static void RightCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X + otherControl.Width - thisControl.Width / 2,
+                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+
+                public static void Right(Control thisControl, Control otherControl, int? gap = null) =>
+                    thisControl.Location = new Point(
+                        otherControl.Location.X + otherControl.Width,
+                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+            }
+        }
+
+        public static class GenericControls
+        {
+            public static CustomButton Button(float? fontSize = null, string text = null, Color? forecolor = null, Size? size = null)
+            {
+                return new CustomButton()
+                {
+                    UseCompatibleTextRendering = true,
+                    TabStop = false,
+                    FlatStyle = FlatStyle.Flat,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    BackColor = RGB(20),
+                    Size = size ?? new Size(24, 24),
+                    Font = new Font(VCROSDMONO, fontSize ?? 20f, FontStyle.Regular),
+                    ForeColor = forecolor ?? Color.White,
+                    Text = text ?? string.Empty,
+                };
+            }
+        }
+
+        public static class Obscure
+        {
+            public static CustomPanel DrawOverTrackBarRail(TrackBar bar)
+            {
+                return new CustomPanel()
+                {
+                    Location = new Point(bar.Bounds.X + 8, bar.Bounds.Y + 8),
+                    Size = new Size(bar.Width - 16, 4),
+                    BackColor = Color.RoyalBlue,
+                };
+            }
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class TitleBar : CustomPanel
+    {
+        public Color TitleColor { get; set; } = QOL.RandomColor();
+        public Color ShadowTitleColor { get; set; } = QOL.RandomColor();
+
+        private bool built = false;
+
+        public TitleBar(Size size)
+        {
+            Size = size;
+            BackColor = QOL.RGB(35);
+            Drag();
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+
+            if (Width == 0 || Height == 0) return;
+
+            if (built) return;
+            else built = true;
+
+            var closingButton = new CustomButton()
+            {
+                TabStop = false,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(64, 64),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = QOL.RGB(20),
+                ForeColor = Color.FromArgb(255, 163, 42, 42),
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                Text = "✖",
+            };
+            closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
+            closingButton.MouseClick += (s, ev) => FindForm()?.Close();
+            Controls.Add(closingButton);
+
+            var minimizeButton = new CustomButton()
+            {
+                TabStop = false,
+                FlatStyle = FlatStyle.Flat,
+                Size = closingButton.Size,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = QOL.RGB(20),
+                ForeColor = Color.FromArgb(255, 42, 163, 150),
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                Text = "―",
+            };
+            QOL.Align.Left(minimizeButton, closingButton, 4);
+            minimizeButton.MouseClick += (s, ev) => FindForm().WindowState = FormWindowState.Minimized;
+            Controls.Add(minimizeButton);
+
+            Paint += (s, ev) =>
+            {
+                Graphics g = ev.Graphics;
+
+                using (var shadowBrush = new SolidBrush(TitleColor))
+                using (var mainBrush = new SolidBrush(ShadowTitleColor))
+                using (var font = new Font(QOL.VCROSDMONO, 32f))
+                {
+                    g.DrawString(FindForm()?.Text, font, shadowBrush, new Point(10, 10));
+                    g.DrawString(FindForm()?.Text, font, mainBrush, new Point(9, 9));
+                }
+            };
+
+        }
+
+        public void Drag()
+        {
+            bool MouseDragging = false;
+            Point cursorPos = Cursor.Position;
+
+            MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left)
+                {
+                    MouseDragging = true;
+                    cursorPos = Cursor.Position;
+                }
+                if (ev.Button == MouseButtons.Right && !MouseDragging)
+                {
+                    TitleColor = QOL.RandomColor();
+                    ShadowTitleColor = QOL.RandomColor();
+                    Invalidate();
+                }
+            };
+
+            MouseUp += (s, ev) => MouseDragging = false;
+
+            MouseMove += (s, ev) =>
+            {
+                if (MouseDragging)
+                {
+                    int deltaX = Cursor.Position.X - cursorPos.X;
+                    int deltaY = Cursor.Position.Y - cursorPos.Y;
+
+                    FindForm().Left += deltaX;
+                    FindForm().Top += deltaY;
+
+                    cursorPos = Cursor.Position;
+
+                    Invalidate();
+                }
+            };
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class ToolbarPanel : CustomPanel
+    {
+        public WeightPanel weightPanel;
+        public WeightSlider weightSlider;
+        public ExpandedWeightMenu expandedWeightMenu;
+        public PivotPanel pivotPanel;
+        public GravityPanel gravityPanel;
+
+        private bool built = false;
+        private Block targetBlock;
+
+        public void SetTarget(Block block)
+        {
+            targetBlock = block ?? throw new ArgumentNullException();
+
+            weightPanel.SetTarget(targetBlock);
+            weightSlider.SetTarget(targetBlock);
+            expandedWeightMenu.SetTarget(targetBlock);
+            pivotPanel.SetTarget(targetBlock);
+            gravityPanel.SetTarget(targetBlock);
+        }
+
+        public ToolbarPanel(Gravity gravity)
+        {
+            BackColor = QOL.RGB(50);
+
+            weightPanel = new WeightPanel();
+            weightSlider = new WeightSlider();
+            expandedWeightMenu = new ExpandedWeightMenu();
+            pivotPanel = new PivotPanel(gravity);
+            gravityPanel = new GravityPanel();
+
+            Controls.Add(weightPanel);
+            Controls.Add(weightSlider);
+            Controls.Add(expandedWeightMenu);
+            Controls.Add(pivotPanel);
+            Controls.Add(gravityPanel);
+
+            if (!built)
+                Build();
+        }
+
+        public void Build()
+        {
+            built = true;
+
+            weightPanel.CollapseExpandedWeightPanel += (s, ev) =>
+            {
+                expandedWeightMenu.Visible = !expandedWeightMenu.Visible;
+                weightPanel.collapsableMenu.Text = expandedWeightMenu.Visible ? "-" : "+";
+            };
+
+            void OnWeightChanged(float newWeight)
+            {
+
+                if (QOL.ValidFloat32(newWeight))
+                    targetBlock.Weight = newWeight;
+                else
+                    targetBlock.Weight = targetBlock.OriginalWeight;
+
+                if (targetBlock.Weight > -100 && targetBlock.Weight < 100)
+                    weightPanel.weightDisplay.Text = $"{newWeight:F1}";
+                else
+                    weightPanel.weightDisplay.Text = $"{newWeight:F0}";
+            }
+
+            weightSlider.WeightChanged += OnWeightChanged;
+
+            expandedWeightMenu.BringToFront();
+            expandedWeightMenu.MouseClick += (s, ev) => weightSlider.Visible = false;
+            expandedWeightMenu.WeightChanged += OnWeightChanged;
+        }
+
+        protected override void OnLayout(LayoutEventArgs e)
+        {
+            base.OnLayout(e);
+
+            QOL.ClampControlWidth(weightPanel);
+
+            QOL.ClampControlWidth(weightSlider);
+            QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
+
+            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
+
+            QOL.ClampControlWidth(pivotPanel);
+            pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
+
+            QOL.ClampControlWidth(gravityPanel, 40);
+            QOL.Align.Right(gravityPanel, pivotPanel, 16);
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class TrackBarOverlayed : TrackBar
+    {
+        //Constant for windows "paint" message
+        private const int WM_PAINT = 0x0F;
+        public Color RailCover { get; set; } = Color.RoyalBlue;
+
+        public TrackBarOverlayed()
+        {
+            DoubleBuffered = true;
+            TabStop = false;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+
+            if (m.Msg == WM_PAINT)
+            {
+                using (var g = CreateGraphics())
+                {
+                    var cover = new Rectangle(new Point(8, 8), new Size(ClientSize.Width - 16, 4));
+                    using (var brush = new SolidBrush(RailCover))
+                        g.FillRectangle(brush, cover);
+                }
+            }
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            e.Handled = true;
+            if (e.KeyCode == Keys.Left && Value != Minimum) Value--;
+            if (e.KeyCode == Keys.Right && Value != Maximum) Value++;
+        }
+
+        protected override bool ShowFocusCues => false;
+        protected override bool ShowKeyboardCues => false;
+
+        protected override void OnGotFocus(EventArgs e)
+        {
+            base.OnGotFocus(e);
+            Parent?.Focus();
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class WeightPanel : CustomPanel
+    {
+        public ClickFilter WeightDisplayFilter;
+
+        public TextBox weightDisplay;
+
+        public Button collapsableMenu;
+        public event EventHandler CollapseExpandedWeightPanel;
+
+        private bool built;
+        private Block targetBlock;
+
+        public void SetTarget(Block block)
+        {
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+            else
+                UpdateWeightDisplay();
+        }
+
+        public void UpdateWeightDisplay() => weightDisplay.Text = $"{targetBlock.Weight:F1}";
+
+        private void Build()
+        {
+            ForeColor = Color.Transparent;
+            BackColor = QOL.RGB(35);
+            Width = 264;
+            Height = 24;
+            Paint += (s, ev) =>
+            {
+                using (var pen = new Pen(BackColor, 1f))
+                    ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            };
+
+            weightDisplay = new TextBox()
+            {
+                Anchor = AnchorStyles.Left,
+                TabStop = false,
+                BorderStyle = BorderStyle.None,
+                BackColor = QOL.RGB(100),
+                ForeColor = Color.White,
+                Font = new Font(QOL.VCROSDMONO, 17f),
+                Text = $"{targetBlock.Weight:F1}",
+                Width = 92,
+            };
+            weightDisplay.TextChanged += (s, ev) =>
+            {
+                if (float.TryParse(weightDisplay.Text, out float newWeight))
+                    targetBlock.Weight = newWeight;
+                else targetBlock.Weight = targetBlock.OriginalWeight;
+            };
+            weightDisplay.LostFocus += (s, ev) =>
+            {
+                if (string.IsNullOrEmpty(weightDisplay.Text)
+                || !float.TryParse(weightDisplay.Text, out _))
+                {
+                    targetBlock.Weight = targetBlock.OriginalWeight;
+                    UpdateWeightDisplay();
+                }
+            };
+            Controls.Add(weightDisplay);
+            WeightDisplayFilter = new ClickFilter(weightDisplay);
+            Application.AddMessageFilter(WeightDisplayFilter);
+
+            var resetWeight = QOL.GenericControls.Button(18f, "↻", Color.White);
+            QOL.Align.Right(resetWeight, weightDisplay, 4);
+            Controls.Add(resetWeight);
+            resetWeight.MouseClick += (s, ev) =>
+            {
+                targetBlock.Weight = targetBlock.OriginalWeight;
+                UpdateWeightDisplay();
+            };
+
+            collapsableMenu = QOL.GenericControls.Button(12f, "+", Color.White);
+            QOL.Align.Right(collapsableMenu, resetWeight);
+            Controls.Add(collapsableMenu);
+            collapsableMenu.MouseClick += (s, ev) => CollapseExpandedWeightPanel.Invoke(this, EventArgs.Empty);
+        }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+
+            var form = FindForm();
+            if (form != null)
+            {
+                form.FormClosing -= FormClosing;
+                form.FormClosing += FormClosing;
+            }
+        }
+
+        private void FormClosing(object sender, EventArgs e)
+        {
+            if (WeightDisplayFilter != null)
+                Application.RemoveMessageFilter(WeightDisplayFilter);
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class WeightSlider : CustomPanel
+    {
+        public TrackBarOverlayed bar;
+
+        public event Action<float> WeightChanged;
+
+        private bool built;
+        private Block targetBlock;
+
+        public void SetTarget(Block block)
+        {
+            targetBlock = block ?? throw new ArgumentNullException();
+            if (!built)
+            {
+                Build();
+                built = true;
+            }
+        }
+
+        private void Build()
+        {
+            Width = 144;
+
+            BackColor = Color.Transparent;
+            DoubleBuffered = true;
+            Visible = true;
+
+            bar = new TrackBarOverlayed
+            {
+                TabStop = false,
+                BackColor = QOL.RGB(50),
+                Size = new Size(ClientSize.Width, 20),
+                TickStyle = TickStyle.None
+            };
+            Controls.Add(bar);
+
+            bool positive = true;
+            int[] barValues = { 0, 1, 2, 5, 10, 20, 35, 50, 100, 250, 500, 750, 1000, 10000, 100000 };
+            bar.Maximum = barValues.Length - 1;
+            bar.Value = 8;
+
+            void UpdateBar()
+            {
+                if (positive)
+                    targetBlock.Weight = barValues[bar.Value];
+                else
+                    targetBlock.Weight = -barValues[bar.Value];
+                WeightChanged.Invoke(targetBlock.Weight);
+            }
+
+            var timer = new Timer() { Interval = 1000 };
+            int seconds = 0;
+            timer.Tick += (s, ev) =>
+            {
+                seconds++;
+                if (seconds == 5)
+                {
+                    bar.RailCover = Color.RoyalBlue;
+                    bar.Invalidate();
+                    timer.Stop();
+                }
+            };
+
+            bar.MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Right)
+                {
+                    timer.Stop();
+                    seconds = 0;
+
+                    positive = !positive;
+                    bar.RailCover = positive ? Color.LimeGreen : Color.IndianRed;
+
+                    UpdateBar();
+                    bar.Invalidate();
+
+                    timer.Start();
+                }
+            };
+            bar.ValueChanged += (s, ev) => UpdateBar();
+        }
+    }
+}
