@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Media;
 using System.Windows.Forms;
 
@@ -115,8 +116,8 @@ namespace Dropper
 
             if (Bottom >= UserBounds.Bottom)
             {
-                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
-                        Cracks.Add(new Crack(this));
+                if (Math.Abs(VY) == Math.Abs(TerminalVelocity) && Weight != 0)
+                    Cracks.Add(new Crack(this));
 
                 ny = UserBounds.Bottom - H;
                 VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
@@ -126,9 +127,9 @@ namespace Dropper
                 else
                     ResetVY();
             }
-            
+
             Bounds = new RectangleF(new PointF(nx, ny), Size);
-        }        
+        }
 
         public void ResetVX() => VX = 0;
         public void ResetVY() => VY = 0;
@@ -215,8 +216,8 @@ namespace Dropper
         {
             if (block.Cracks.Count == 3) return;
 
-            if (block.Active)
-                VineBoom.Play();
+            //if (block.Active)
+            //    VineBoom.Play();
 
             StartX = (float)(block.W * random.NextDouble());
             StartY = (float)(block.H * random.NextDouble());

@@ -49,6 +49,7 @@ namespace Dropper
             Controls.Add(gameArea);
             Controls.Add(floor);
 
+            toolBar.Visible = false;
             toolBar.Height = 98;
             toolBar.Dock = DockStyle.Top;
 

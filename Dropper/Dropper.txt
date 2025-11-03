@@ -49,6 +49,7 @@ namespace Dropper
             Controls.Add(gameArea);
             Controls.Add(floor);
 
+            toolBar.Visible = false;
             toolBar.Height = 98;
             toolBar.Dock = DockStyle.Top;
 
@@ -65,7 +66,9 @@ namespace Dropper
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Media;
+using System.Windows.Forms;
 
 namespace Dropper
 {
@@ -178,7 +181,7 @@ namespace Dropper
 
             if (Bottom >= UserBounds.Bottom)
             {
-                if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
+                if (Math.Abs(VY) == Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
                 ny = UserBounds.Bottom - H;
@@ -193,13 +196,13 @@ namespace Dropper
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
 
+        public void ResetVX() => VX = 0;
+        public void ResetVY() => VY = 0;
         public void ResetVelocity()
         {
             ResetVX();
             ResetVY();
         }
-        public void ResetVX() => VX = 0;
-        public void ResetVY() => VY = 0;
 
         public void DoubleSize()
         {
@@ -240,7 +243,7 @@ namespace Dropper
                 VY = this.VY,
                 Restituion = this.Restituion,
                 CanBounce = this.CanBounce,
-                Cracks = new List<Crack>(),
+                Cracks = new List<Crack>(this.Cracks),
                 Gravity = this.Gravity,
             };
         }
@@ -276,8 +279,10 @@ namespace Dropper
 
         public Crack(Block block)
         {
-            if (block.Active)
-                VineBoom.Play();
+            if (block.Cracks.Count == 3) return;
+
+            //if (block.Active)
+            //    VineBoom.Play();
 
             StartX = (float)(block.W * random.NextDouble());
             StartY = (float)(block.H * random.NextDouble());
@@ -367,6 +372,9 @@ namespace Dropper
             var left = Block.Clone(block);
             var right = Block.Clone(block);
 
+            left.Cracks.Clear();
+            right.Cracks.Clear();
+
             if (block.Active)
             {
                 int randomBool = random.Next(0, 2);
@@ -380,11 +388,15 @@ namespace Dropper
             Stack.Remove(block);
 
             left.Bounds = new RectangleF(
-                left.Bounds.Location,
+                new PointF(
+                    left.Left,
+                    left.Top),
                 new SizeF(
                     left.W / 2,
                     left.H));
             left.Weight /= 2;
+            left.VX /= 2;
+            left.VY /= 2;
 
             right.Bounds = new RectangleF(
                 new PointF(
@@ -394,6 +406,8 @@ namespace Dropper
                     right.W / 2,
                     right.H));
             right.Weight /= 2;
+            right.VX /= 2;
+            right.VY /= 2;
 
             Stack.Insert(index, left);
             Stack.Insert(index, right);
@@ -497,7 +511,6 @@ namespace Dropper
             DoubleBuffered = true;
             TabStop = false;
         }
-
         protected override bool ShowFocusCues => false;
         protected override bool ShowKeyboardCues => false;
     }
@@ -555,8 +568,47 @@ namespace Dropper
             gravity.Start(Blocks.Stack);
             //KeyMovement();
             HoodooVoodooBlockMagic();
+
+            titleBar.controlBar.DrawGuy += () =>
+            {
+                area.gameArea.Paint += (s, ev) =>
+                {
+                    var cube = new Rectangle(new Point(0, titleBar.Height), new Size(128, 128));
+                    using (var brush = new SolidBrush(Color.Crimson))
+                        ev.Graphics.FillRectangle(brush, cube);
+                };
+                foreach (Control control in Controls)
+                {
+                    control.Paint += (s, ev) =>
+                    {
+                        var cube = new Rectangle(new Point(0, titleBar.Height), new Size(128, 128));
+                        using (var brush = new SolidBrush(Color.Crimson))
+                            ev.Graphics.FillRectangle(brush, cube);
+                    };
+                }
+                Invalidate();
+            };
         }
 
+        private void ConfigureForm()
+        {
+            Text = "Dropper";
+            FormBorderStyle = FormBorderStyle.None;
+            Size = new Size(1024, 896);
+            BackColor = QOL.RGB(20);
+            KeyPreview = true;
+            DoubleBuffered = true;
+            CenterToScreen();
+
+            titleBar = new TitleBar() { Size = new Size(Width, 38) };
+            Controls.Add(titleBar);
+
+            FormClosing += (s, ev) =>
+            {
+                if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
+                    Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
+            };
+        }
         private void ChangeBlockFocused(Block block)
         {
             if (block == blocks.Target)
@@ -570,7 +622,6 @@ namespace Dropper
             area.SetTarget(block);
             area.gameArea.Invalidate();
         }
-
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.Enter)
@@ -580,7 +631,6 @@ namespace Dropper
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
-
         private void HoodooVoodooBlockMagic()
         {
             bool spaceDown = false;
@@ -607,7 +657,7 @@ namespace Dropper
                 if (ev.KeyCode == Keys.Back)
                 {
                     if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
-                    blocks.Remove();
+                        blocks.Remove();
                     area.gameArea.Invalidate();
                 }
             };
@@ -618,7 +668,6 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-
         private void LoadArea()
         {
             area = new Area
@@ -628,26 +677,6 @@ namespace Dropper
             };
             area.Build(gravity);
             Controls.Add(area);
-        }
-
-        private void ConfigureForm()
-        {
-            Text = "Dropper";
-            FormBorderStyle = FormBorderStyle.None;
-            Size = new Size(1024, 896);
-            BackColor = QOL.RGB(20);
-            KeyPreview = true;
-            DoubleBuffered = true;
-            CenterToScreen();
-
-            titleBar = new TitleBar(new Size(Width, 64));
-            Controls.Add(titleBar);
-
-            FormClosing += (s, ev) =>
-            {
-                if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
-                    Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
-            };
         }
         private void ConfigureBlock(Block block)
         {
@@ -663,56 +692,6 @@ namespace Dropper
                 (int)(area.gameArea.Width / 2 - block.W / 2),
                 (int)(area.gameArea.Height / 2 - block.H / 2));
         }
-
-        //private bool UpKey = false;
-        //private bool LeftKey = false;
-        //private bool DownKey = false;
-        //private bool RightKey = false;
-        //private float Speed => Blocks.Target.Weight / 10.0f;
-        //private void KeyMovement()
-        //{
-        //    KeyDown += (s, ev) =>
-        //    {
-        //        if (ev.KeyCode == Keys.W && !UpKey) UpKey = true;
-        //        if (ev.KeyCode == Keys.A && !LeftKey) LeftKey = true;
-        //        if (ev.KeyCode == Keys.S && !DownKey) DownKey = true;
-        //        if (ev.KeyCode == Keys.D && !RightKey) RightKey = true;
-        //    };
-        //    KeyUp += (s, ev) =>
-        //    {
-        //        if (ev.KeyCode == Keys.W) UpKey = false;
-        //        if (ev.KeyCode == Keys.A) LeftKey = false;
-        //        if (ev.KeyCode == Keys.S) DownKey = false;
-        //        if (ev.KeyCode == Keys.D) RightKey = false;
-        //    };
-
-        //    var timer = new Timer() { Interval = 10 };
-        //    timer.Tick += (s, ev) =>
-        //    {
-        //        if (Blocks.Target.MouseDragging) return;
-        //        float NX = 0.0f;
-        //        float NY = 0.0f;
-        //        if (UpKey) NY -= 1;
-        //        if (LeftKey) NX -= 1;
-        //        if (DownKey) NY += 1;
-        //        if (RightKey) NX += 1;
-
-        //        if (NX != 0 || NY != 0)
-        //        {
-        //            float length = (float)Math.Sqrt(NX * NX + NY * NY);
-        //            NX = NX / length * Speed;
-        //            NY = NY / length * Speed;
-        //        }
-        //        Blocks.Target.Constrain();
-
-        //        Blocks.Target.Bounds = new RectangleF(new PointF(
-        //            Blocks.Target.X + NX,
-        //            Blocks.Target.Y + NY),
-        //            Blocks.Target.Size);
-        //        area.gameArea.Invalidate();
-        //    };
-        //    timer.Start();
-        //}
     }
 }
 namespace Dropper
@@ -1111,13 +1090,44 @@ namespace Dropper
         }
     }
 }
+using System.Drawing;
+using System.Windows.Forms;
+
 namespace Dropper
 {
     public class Floor : CustomPanel
     {
+        private const string Title = "Dropper";
+        private readonly float TitleFontSize = 26f;
+        private Font TitleFont => new Font(QOL.VCROSDMONO, TitleFontSize);
+        private Rectangle TitleRect => new Rectangle(new Point(5, 0), TextRenderer.MeasureText(Title, new Font(QOL.VCROSDMONO, TitleFontSize + 2f)));
+        public Color TitleColor { get; set; } = QOL.RandomColor();
+        public Color ShadowTitleColor { get; set; } = QOL.RandomColor();
+        public Color BorderColor => TitleColor;
+
         public Floor()
         {
             BackColor = QOL.RGB(40);
+
+            Paint += (s, ev) =>
+            {
+                Graphics g = ev.Graphics;
+
+                using (var mainBrush = new SolidBrush(ShadowTitleColor))
+                    g.DrawString(Title, TitleFont, mainBrush, TitleRect);
+                using (var shadowBrush = new SolidBrush(TitleColor))
+                    g.DrawString(Title, TitleFont, shadowBrush, new Rectangle(new Point(TitleRect.X - 1, TitleRect.Y - 1), TitleRect.Size));
+            };
+
+            MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Right)
+                {
+                    TitleColor = QOL.RandomColor();
+                    ShadowTitleColor = QOL.RandomColor();
+                    Invalidate();
+                }
+            };
         }
     }
 }
@@ -1276,11 +1286,6 @@ namespace Dropper
                         }
                     }
                 };
-            //TODO
-            /*
-             * Crack after terminal velocity impact?
-             * Something with an egg???
-             */
 
             MouseUp += (s, ev) =>
             {
@@ -1541,6 +1546,101 @@ namespace Dropper
             //};
             //QOL.Align.Bottom.Center(displayVTY, displayVTX, 1);
             //Controls.Add(displayVTY);
+        }
+    }
+}
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class LerpButton : Button
+    {
+        private readonly Color BaseColor = QOL.RGB(35);
+        private readonly Color HoverColor = QOL.RGB(60);
+        private readonly Color BorderHoverColor = QOL.RGB(80);
+        private bool ShowBorder = false;
+        private Color CurrentColor;
+
+        private Color TargetColor;
+        private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
+        private float AnimationProgress;
+        private const float AnimationSpeed = 0.0175f;
+
+        public LerpButton()
+        {
+            DoubleBuffered = true;
+            TabStop = false;
+            FlatAppearance.BorderSize = 0;
+            FlatStyle = FlatStyle.Flat;
+            TextAlign = ContentAlignment.MiddleCenter;
+            ForeColor = Color.White;
+
+            CurrentColor = TargetColor = BaseColor;
+            AnimationTimer.Tick += AnimateColor;
+        }
+        protected override bool ShowFocusCues => false;
+        protected override bool ShowKeyboardCues => false;
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+
+            g.Clear(CurrentColor);
+            TextRenderer.DrawText(
+                g,
+                Text,
+                Font,
+                ClientRectangle,
+                ForeColor,
+                TextFormatFlags.HorizontalCenter
+                | TextFormatFlags.VerticalCenter);
+
+            if (ShowBorder)
+                using (var borderPen = new Pen(BorderHoverColor, 2f))
+                    g.DrawRectangle(borderPen, ClientRectangle.X, ClientRectangle.Y, ClientSize.Width - 1, ClientSize.Height - 1);
+        }
+
+        private Color LerpColor(Color from, Color to, float t)
+        {
+            int r = (int)(from.R + (to.R - from.R) * t);
+            int g = (int)(from.G + (to.G - from.G) * t);
+            int b = (int)(from.B + (to.B - from.B) * t);
+            return Color.FromArgb(255, r, g, b);
+        }
+
+        private void StartAnimation(Color @new)
+        {
+            TargetColor = @new;
+            AnimationProgress = 0f;
+            AnimationTimer.Start();
+        }
+
+        private void AnimateColor(object sender, EventArgs e)
+        {
+            AnimationProgress += AnimationSpeed;
+            if (AnimationProgress >= 1f)
+            {
+                AnimationProgress = 1f;
+                AnimationTimer.Stop();
+            }
+            CurrentColor = LerpColor(CurrentColor, TargetColor, AnimationProgress);
+            Invalidate();
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            StartAnimation(HoverColor);
+            ShowBorder = true;
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            StartAnimation(BaseColor);
+            ShowBorder = false;
         }
     }
 }
@@ -1906,70 +2006,55 @@ namespace Dropper
 {
     public class TitleBar : CustomPanel
     {
-        public Color TitleColor { get; set; } = QOL.RandomColor();
-        public Color ShadowTitleColor { get; set; } = QOL.RandomColor();
+        private readonly CustomButton closingButton;
+        private readonly CustomButton minimizeButton;
 
-        private bool built = false;
+        public ControlBar controlBar;
 
-        public TitleBar(Size size)
+        public TitleBar()
         {
-            Size = size;
-            BackColor = QOL.RGB(35);
             Drag();
-        }
+            BackColor = QOL.RGB(35);
 
-        protected override void OnSizeChanged(EventArgs e)
-        {
-            base.OnSizeChanged(e);
-
-            if (Width == 0 || Height == 0) return;
-
-            if (built) return;
-            else built = true;
-
-            var closingButton = new CustomButton()
+            closingButton = new CustomButton()
             {
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(64, 64),
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = QOL.RGB(20),
                 ForeColor = Color.FromArgb(255, 163, 42, 42),
                 Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "✖",
             };
-            closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
             closingButton.MouseClick += (s, ev) => FindForm()?.Close();
             Controls.Add(closingButton);
 
-            var minimizeButton = new CustomButton()
+            minimizeButton = new CustomButton()
             {
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
-                Size = closingButton.Size,
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = QOL.RGB(20),
                 ForeColor = Color.FromArgb(255, 42, 163, 150),
                 Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "―",
             };
-            QOL.Align.Left(minimizeButton, closingButton, 4);
             minimizeButton.MouseClick += (s, ev) => FindForm().WindowState = FormWindowState.Minimized;
             Controls.Add(minimizeButton);
+        }
 
-            Paint += (s, ev) =>
-            {
-                Graphics g = ev.Graphics;
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
 
-                using (var shadowBrush = new SolidBrush(TitleColor))
-                using (var mainBrush = new SolidBrush(ShadowTitleColor))
-                using (var font = new Font(QOL.VCROSDMONO, 32f))
-                {
-                    g.DrawString(FindForm()?.Text, font, shadowBrush, new Point(10, 10));
-                    g.DrawString(FindForm()?.Text, font, mainBrush, new Point(9, 9));
-                }
-            };
+            closingButton.Size = new Size(ClientSize.Height, ClientSize.Height);
+            closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
 
+            minimizeButton.Size = closingButton.Size;
+            QOL.Align.Left(minimizeButton, closingButton, 4);
+
+            controlBar = new ControlBar() { Size = new Size(300, ClientSize.Height) };
+            Controls.Add(controlBar);
         }
 
         public void Drag()
@@ -1983,12 +2068,6 @@ namespace Dropper
                 {
                     MouseDragging = true;
                     cursorPos = Cursor.Position;
-                }
-                if (ev.Button == MouseButtons.Right && !MouseDragging)
-                {
-                    TitleColor = QOL.RandomColor();
-                    ShadowTitleColor = QOL.RandomColor();
-                    Invalidate();
                 }
             };
 
@@ -2009,6 +2088,41 @@ namespace Dropper
                     Invalidate();
                 }
             };
+        }
+    }
+
+    public class ControlBar : CustomPanel
+    {
+        private readonly LerpButton panels;
+
+        public ControlBar()
+        {
+            panels = new LerpButton()
+            {
+                TabStop = false,
+                FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent,
+                Font = new Font(QOL.VCROSDMONO, 18f),
+                Text = "Panels",
+            };
+            Controls.Add(panels);
+            panels.MouseHover += (s, ev) =>
+            {
+                DrawGuy?.Invoke();
+            };
+        }
+        public event Action DrawGuy;
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+
+            panels.Size = new Size
+                (TextRenderer.MeasureText
+                ("Panels",
+                new Font(QOL.VCROSDMONO, 18f)).Width,
+                ClientSize.Height);
         }
     }
 }
@@ -2072,9 +2186,13 @@ namespace Dropper
 
             void OnWeightChanged(float newWeight)
             {
-
                 if (QOL.ValidFloat32(newWeight))
-                    targetBlock.Weight = newWeight;
+                {
+                    if (newWeight > 0)
+                        targetBlock.Weight = Math.Min(newWeight, 100000);
+                    if (newWeight < 0)
+                        targetBlock.Weight = Math.Max(newWeight, -100000);
+                }
                 else
                     targetBlock.Weight = targetBlock.OriginalWeight;
 
@@ -2190,7 +2308,13 @@ namespace Dropper
                 UpdateWeightDisplay();
         }
 
-        public void UpdateWeightDisplay() => weightDisplay.Text = $"{targetBlock.Weight:F1}";
+        public void UpdateWeightDisplay()
+        {
+            if (targetBlock.Weight > -100 && targetBlock.Weight < 100)
+                weightDisplay.Text = $"{targetBlock.Weight:F1}";
+            else
+                weightDisplay.Text = $"{targetBlock.Weight:F0}";
+        }
 
         private void Build()
         {
@@ -2218,8 +2342,14 @@ namespace Dropper
             weightDisplay.TextChanged += (s, ev) =>
             {
                 if (float.TryParse(weightDisplay.Text, out float newWeight))
-                    targetBlock.Weight = newWeight;
+                {
+                    if (newWeight > 0)
+                        targetBlock.Weight = Math.Min(newWeight, 100000);
+                    if (newWeight < 0)
+                        targetBlock.Weight = Math.Max(newWeight, -100000);
+                }
                 else targetBlock.Weight = targetBlock.OriginalWeight;
+                UpdateWeightDisplay();
             };
             weightDisplay.LostFocus += (s, ev) =>
             {

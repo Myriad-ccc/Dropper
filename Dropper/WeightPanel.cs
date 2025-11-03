@@ -28,7 +28,13 @@ namespace Dropper
                 UpdateWeightDisplay();
         }
 
-        public void UpdateWeightDisplay() => weightDisplay.Text = $"{targetBlock.Weight:F1}";
+        public void UpdateWeightDisplay()
+        {
+            if (targetBlock.Weight > -100 && targetBlock.Weight < 100)
+                weightDisplay.Text = $"{targetBlock.Weight:F1}";
+            else
+                weightDisplay.Text = $"{targetBlock.Weight:F0}";
+        }
 
         private void Build()
         {
@@ -56,8 +62,14 @@ namespace Dropper
             weightDisplay.TextChanged += (s, ev) =>
             {
                 if (float.TryParse(weightDisplay.Text, out float newWeight))
-                    targetBlock.Weight = newWeight;
+                {
+                    if (newWeight > 0)
+                        targetBlock.Weight = Math.Min(newWeight, 100000);
+                    if (newWeight < 0)
+                        targetBlock.Weight = Math.Max(newWeight, -100000);
+                }
                 else targetBlock.Weight = targetBlock.OriginalWeight;
+                UpdateWeightDisplay();
             };
             weightDisplay.LostFocus += (s, ev) =>
             {

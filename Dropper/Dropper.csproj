@@ -79,13 +79,16 @@
     <Compile Include="GravityPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="LerpButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="PivotPanel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QOL.cs" />
-    <Compile Include="TitleBar.cs">
+    <Compile Include="ControlBar.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ToolbarPanel.cs">

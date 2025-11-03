@@ -9,8 +9,9 @@ namespace Dropper
         private Blocks blocks;
         private readonly Gravity gravity = new Gravity();
 
-        private TitleBar titleBar;
+        private ControlBar controlBar;
         private Area area;
+
 
         public Form1() => InitializeComponent();
 
@@ -34,6 +35,26 @@ namespace Dropper
             HoodooVoodooBlockMagic();
         }
 
+        private void ConfigureForm()
+        {
+            Text = "Dropper";
+            FormBorderStyle = FormBorderStyle.None;
+            Size = new Size(1024, 896);
+            BackColor = QOL.RGB(20);
+            KeyPreview = true;
+            DoubleBuffered = true;
+            CenterToScreen();
+
+            controlBar = new ControlBar();
+            controlBar.Size = new Size(ClientSize.Width, 198);
+            Controls.Add(controlBar);
+
+            FormClosing += (s, ev) =>
+            {
+                if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
+                    Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
+            };
+        }
         private void ChangeBlockFocused(Block block)
         {
             if (block == blocks.Target)
@@ -47,7 +68,6 @@ namespace Dropper
             area.SetTarget(block);
             area.gameArea.Invalidate();
         }
-
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.Enter)
@@ -57,7 +77,6 @@ namespace Dropper
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
-
         private void HoodooVoodooBlockMagic()
         {
             bool spaceDown = false;
@@ -84,7 +103,7 @@ namespace Dropper
                 if (ev.KeyCode == Keys.Back)
                 {
                     if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
-                    blocks.Remove();
+                        blocks.Remove();
                     area.gameArea.Invalidate();
                 }
             };
@@ -95,36 +114,15 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-
         private void LoadArea()
         {
             area = new Area
             {
-                Size = new Size(ClientSize.Width, ClientSize.Height - titleBar.Height),
-                Location = new Point(0, titleBar.Height)
+                Size = new Size(ClientSize.Width, ClientSize.Height - controlBar.Height),
+                Location = new Point(0, controlBar.Height)
             };
             area.Build(gravity);
             Controls.Add(area);
-        }
-
-        private void ConfigureForm()
-        {
-            Text = "Dropper";
-            FormBorderStyle = FormBorderStyle.None;
-            Size = new Size(1024, 896);
-            BackColor = QOL.RGB(20);
-            KeyPreview = true;
-            DoubleBuffered = true;
-            CenterToScreen();
-
-            titleBar = new TitleBar(new Size(Width, 64));
-            Controls.Add(titleBar);
-
-            FormClosing += (s, ev) =>
-            {
-                if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
-                    Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
-            };
         }
         private void ConfigureBlock(Block block)
         {
@@ -140,55 +138,5 @@ namespace Dropper
                 (int)(area.gameArea.Width / 2 - block.W / 2),
                 (int)(area.gameArea.Height / 2 - block.H / 2));
         }
-
-        //private bool UpKey = false;
-        //private bool LeftKey = false;
-        //private bool DownKey = false;
-        //private bool RightKey = false;
-        //private float Speed => Blocks.Target.Weight / 10.0f;
-        //private void KeyMovement()
-        //{
-        //    KeyDown += (s, ev) =>
-        //    {
-        //        if (ev.KeyCode == Keys.W && !UpKey) UpKey = true;
-        //        if (ev.KeyCode == Keys.A && !LeftKey) LeftKey = true;
-        //        if (ev.KeyCode == Keys.S && !DownKey) DownKey = true;
-        //        if (ev.KeyCode == Keys.D && !RightKey) RightKey = true;
-        //    };
-        //    KeyUp += (s, ev) =>
-        //    {
-        //        if (ev.KeyCode == Keys.W) UpKey = false;
-        //        if (ev.KeyCode == Keys.A) LeftKey = false;
-        //        if (ev.KeyCode == Keys.S) DownKey = false;
-        //        if (ev.KeyCode == Keys.D) RightKey = false;
-        //    };
-
-        //    var timer = new Timer() { Interval = 10 };
-        //    timer.Tick += (s, ev) =>
-        //    {
-        //        if (Blocks.Target.MouseDragging) return;
-        //        float NX = 0.0f;
-        //        float NY = 0.0f;
-        //        if (UpKey) NY -= 1;
-        //        if (LeftKey) NX -= 1;
-        //        if (DownKey) NY += 1;
-        //        if (RightKey) NX += 1;
-
-        //        if (NX != 0 || NY != 0)
-        //        {
-        //            float length = (float)Math.Sqrt(NX * NX + NY * NY);
-        //            NX = NX / length * Speed;
-        //            NY = NY / length * Speed;
-        //        }
-        //        Blocks.Target.Constrain();
-
-        //        Blocks.Target.Bounds = new RectangleF(new PointF(
-        //            Blocks.Target.X + NX,
-        //            Blocks.Target.Y + NY),
-        //            Blocks.Target.Size);
-        //        area.gameArea.Invalidate();
-        //    };
-        //    timer.Start();
-        //}
     }
 }

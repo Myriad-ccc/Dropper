@@ -58,9 +58,13 @@ namespace Dropper
 
             void OnWeightChanged(float newWeight)
             {
-
                 if (QOL.ValidFloat32(newWeight))
-                    targetBlock.Weight = newWeight;
+                {
+                    if (newWeight > 0)
+                        targetBlock.Weight = Math.Min(newWeight, 100000);
+                    if (newWeight < 0)
+                        targetBlock.Weight = Math.Max(newWeight, -100000);
+                }
                 else
                     targetBlock.Weight = targetBlock.OriginalWeight;
 

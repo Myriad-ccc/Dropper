@@ -9,7 +9,6 @@ namespace Dropper
             DoubleBuffered = true;
             TabStop = false;
         }
-
         protected override bool ShowFocusCues => false;
         protected override bool ShowKeyboardCues => false;
     }
