@@ -11,7 +11,7 @@ namespace Dropper
         public Color BaseColor { get; set; } = QOL.RGB(35);
         private readonly Color HoverColor = QOL.RGB(60);
         private readonly Color BorderHoverColor = QOL.RGB(80);
-        private Color? ClickColor { get; set; }
+        public Color? ClickColor { get; set; }
         private bool ShowBorder = false;
         private Color CurrentColor;
 

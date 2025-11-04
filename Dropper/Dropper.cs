@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -14,6 +15,8 @@ namespace Dropper
         private ToolbarPanel toolBar;
         private GameArea gameArea;
         private Floor floor;
+
+        private CustomPanel PanelOptions;
 
         public Form1() => InitializeComponent();
 
@@ -32,25 +35,31 @@ namespace Dropper
             gravity.SplitBlock += block => blocks.Split(block);
 
             toolBar = new ToolbarPanel(gravity);
-            controlBar = new ControlBar(toolBar.Values);
+            PanelOptions = new CustomPanel()
+            {
+                Height = 160,
+                BackColor = QOL.RandomColor(),
+            };
+            controlBar = new ControlBar(toolBar.Values, PanelOptions);
             gameArea = new GameArea();
             floor = new Floor();
 
+            Controls.Add(PanelOptions);
             Controls.Add(toolBar);
-            Controls.Add(controlBar);
             Controls.Add(gameArea);
+            Controls.Add(controlBar);
             Controls.Add(floor);
 
-            gameArea.BringToFront();
             gameArea.Dock = DockStyle.Fill;
 
-            toolBar.Height = 98;
-            toolBar.Dock = DockStyle.Top;
-            toolBar.Values.Select(x => x.Visible = false);
-            toolBar.Visible = false;
-
-            controlBar.Height = 64;
+            controlBar.Height = 54;
             controlBar.Dock = DockStyle.Top;
+
+            toolBar.Size = new Size(ClientSize.Width, 98);
+            toolBar.Location = new Point(0, controlBar.Bottom);
+            toolBar.Values.ForEach(x => x.Visible = false);
+            toolBar.Visible = false;
+            toolBar.Dock = DockStyle.None;
 
             floor.Height = 32;
             floor.Dock = DockStyle.Bottom;
@@ -59,6 +68,14 @@ namespace Dropper
             {
                 var timer = new Timer { Interval = 10 };
                 int target = show ? 98 : 0;
+
+                foreach (var block in Blocks.Stack)
+                    block.UserBounds = new Rectangle(
+                        gameArea.Location.X, 
+                            gameArea.Location.Y + (show ? 44 : -54), // i have no earthly idea why the magic numbers are 44 and -54. i never will
+                        gameArea.Width, // UPDATE!!: 54 is controlbar's width. 44 remains a complete mystery
+                    gameArea.Height - (show ? 98 : 0)); //UPDATE 2: replacing -54 with -controlBar.Height breaks everything. i am mystified
+                
 
                 timer.Tick += (s, ev) =>
                 {
@@ -75,7 +92,11 @@ namespace Dropper
                 if (show) toolBar.Visible = true;
                 timer.Start();
             };
-            gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
+            controlBar.ShowWeightPanel += () => toolBar.weightPanel.Visible = !toolBar.weightPanel.Visible;
+            controlBar.ShowSlider += () => toolBar.weightSlider.Visible = !toolBar.weightSlider.Visible;
+            controlBar.ShowExpanded += () => toolBar.expandedWeightMenu.Visible = !toolBar.expandedWeightMenu.Visible;
+            controlBar.ShowPivot += () => toolBar.pivotPanel.Visible = !toolBar.pivotPanel.Visible;
+            controlBar.ShowGravity += () => toolBar.gravityPanel.Visible = !toolBar.gravityPanel.Visible; gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
             gameArea.SplitBlock += block => blocks.Split(block);
 
             blocks.Add();

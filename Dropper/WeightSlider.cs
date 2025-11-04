@@ -27,7 +27,6 @@ namespace Dropper
         {
             BackColor = Color.Transparent;
             DoubleBuffered = true;
-            Visible = true;
 
             bar = new TrackBarOverlayed
             {

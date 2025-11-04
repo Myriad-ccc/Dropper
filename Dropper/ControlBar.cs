@@ -13,12 +13,11 @@ namespace Dropper
 
         private readonly List<ControlledPanel> Controllers = new List<ControlledPanel>();
         private readonly LerpButton PanelTrigger;
-        private readonly CustomPanel PanelOptions;
         private readonly ControlledPanel PanelController;
 
         public event Action<bool> ShowToolBar;
 
-        public ControlBar(List<CustomPanel> PanelValues)
+        public ControlBar(List<CustomPanel> PanelValues, CustomPanel panelOptions)
         {
             Drag();
             BackColor = QOL.RGB(35);
@@ -28,7 +27,6 @@ namespace Dropper
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Size = new Size(64, 64),
                 BackColor = QOL.RGB(20),
                 ForeColor = Color.FromArgb(255, 163, 42, 42),
                 Font = new Font(QOL.VCROSDMONO, 20f),
@@ -42,7 +40,6 @@ namespace Dropper
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Size = new Size(64, 64),
                 BackColor = QOL.RGB(20),
                 ForeColor = Color.FromArgb(255, 42, 163, 150),
                 Font = new Font(QOL.VCROSDMONO, 20f),
@@ -60,20 +57,13 @@ namespace Dropper
             };
             Controls.Add(PanelTrigger);
 
-            PanelOptions = new CustomPanel()
-            {
-                Height = 160,
-                BackColor = QOL.RandomColor(),
-            };
-            Controls.Add(PanelOptions);
-
             string[] names = PanelValues
                         .Select(x =>
                              x.GetType().Name
                                 .Substring(0, x.GetType().Name.Skip(1).TakeWhile(c => !char.IsUpper(c)).Count() + 1))
                         .ToArray();
             names[1] = "Slider";
-            PanelController = new ControlledPanel(PanelTrigger, PanelOptions, new LerpButton[names.Length], names);
+            PanelController = new ControlledPanel(PanelTrigger, panelOptions, new LerpButton[names.Length], names);
             Controllers.Add(PanelController);
             PanelController.Showing += (s, ev) =>
             {
@@ -84,26 +74,43 @@ namespace Dropper
                         PanelController.Hide();
             };
 
-            foreach (var value in PanelOptions.Controls.OfType<LerpButton>())
+            var PanelButtons = panelOptions.Controls.OfType<LerpButton>().ToList();
+            for (int i = 0; i < PanelButtons.Count; i++)
             {
-                value.MouseDown += (s, ev) =>
+                int b = i;
+                var button = PanelButtons[b];
+                button.MouseDown += (s, ev) =>
                 {
                     if (ev.Button == MouseButtons.Left)
                     {
-                        value.On = !value.On;
-                        if (PanelOptions.Controls.OfType<LerpButton>().Any(x => x.On))
-                            ShowToolBar?.Invoke(true);
-                        else ShowToolBar?.Invoke(false);
+                        button.On = !button.On;
+                        ShowToolBar?.Invoke(PanelButtons.Any(x => x.On));
+                        button.ForeColor = button.On ? Color.CornflowerBlue : Color.White;
+                    }
+                    switch (b)
+                    {
+                        case 0: ShowWeightPanel?.Invoke(); break;
+                        case 1: ShowSlider?.Invoke(); break;
+                        case 2: ShowExpanded?.Invoke(); break;
+                        case 3: ShowPivot?.Invoke(); break;
+                        case 4: ShowGravity?.Invoke(); break;
                     }
                 };
             }
         }
+        public event Action ShowWeightPanel;
+        public event Action ShowSlider;
+        public event Action ShowExpanded;
+        public event Action ShowPivot;
+        public event Action ShowGravity;
 
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
 
+            closingButton.Size = new Size(ClientSize.Height, ClientSize.Height);
             closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
+            minimizeButton.Size = closingButton.Size;
             QOL.Align.Left(minimizeButton, closingButton, 4);
         }
         public void Drag()

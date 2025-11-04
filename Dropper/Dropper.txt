@@ -1,69 +1,4 @@
-﻿using System.Windows.Forms;
-
-namespace Dropper
-{
-    public class Area : CustomPanel
-    {
-        private Gravity Gravity;
-
-        //public ToolbarPanel toolBar;
-        public GameArea gameArea;
-        public Floor floor;
-
-        public void SetTarget(Block block)
-        {
-            //toolBar.SetTarget(block);
-            gameArea.Invalidate();
-
-            //Gravity.VXChanged += newVX =>
-            //{
-            //    if (block.Gravity == Block.GravityMode.Dynamic)
-            //        toolBar.gravityPanel.displayVX.Text = $"{newVX:F1}";
-            //};
-            //Gravity.VYChanged += newVY =>
-            //{
-            //    if (block.Gravity == Block.GravityMode.Dynamic)
-            //        toolBar.gravityPanel.displayVY.Text = $"{newVY:F1}";
-            //};
-
-            //Gravity.Redraw += () =>
-            //{
-            //    if (block.Gravity != Block.GravityMode.Dynamic)
-            //    {
-            //        toolBar.gravityPanel.displayVX.Text = "";
-            //        toolBar.gravityPanel.displayVY.Text = "";
-            //    }
-            //    gameArea.Invalidate();
-            //};
-        }
-
-        public void Build(Gravity gravity)
-        {
-            Gravity = gravity;
-
-            //toolBar = new ToolbarPanel(gravity);
-            gameArea = new GameArea();
-            floor = new Floor();
-
-            //Controls.Add(toolBar);
-            Controls.Add(gameArea);
-            Controls.Add(floor);
-
-            //toolBar.Visible = false;
-            //toolBar.Height = 98;
-            //toolBar.Dock = DockStyle.Top;
-
-            gameArea.BringToFront();
-            gameArea.Dock = DockStyle.Fill;
-
-            floor.Height = 32;
-            floor.Dock = DockStyle.Bottom;
-
-            gravity.Redraw += () => gameArea.Invalidate();
-        }
-    }
-}
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -503,6 +438,7 @@ namespace Dropper
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -512,14 +448,13 @@ namespace Dropper
         private readonly CustomButton closingButton;
         private readonly CustomButton minimizeButton;
 
-        private readonly ToolBar toolBar;
-
         private readonly List<ControlledPanel> Controllers = new List<ControlledPanel>();
         private readonly LerpButton PanelTrigger;
-        private readonly CustomPanel PanelOptions;
         private readonly ControlledPanel PanelController;
 
-        public ControlBar()
+        public event Action<bool> ShowToolBar;
+
+        public ControlBar(List<CustomPanel> PanelValues, CustomPanel panelOptions)
         {
             Drag();
             BackColor = QOL.RGB(35);
@@ -529,7 +464,6 @@ namespace Dropper
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Size = new Size(64, 64),
                 BackColor = QOL.RGB(20),
                 ForeColor = Color.FromArgb(255, 163, 42, 42),
                 Font = new Font(QOL.VCROSDMONO, 20f),
@@ -543,7 +477,6 @@ namespace Dropper
                 TabStop = false,
                 FlatStyle = FlatStyle.Flat,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Size = new Size(64, 64),
                 BackColor = QOL.RGB(20),
                 ForeColor = Color.FromArgb(255, 42, 163, 150),
                 Font = new Font(QOL.VCROSDMONO, 20f),
@@ -561,15 +494,13 @@ namespace Dropper
             };
             Controls.Add(PanelTrigger);
 
-            PanelOptions = new CustomPanel()
-            {
-                Height = 160,
-                BackColor = QOL.RandomColor(),
-            };
-            Controls.Add(PanelOptions);
-
-            string[] names = { "Weight", "Expanded", "Slider", "Pivot", "Gravity" };
-            PanelController = new ControlledPanel(PanelTrigger, PanelOptions, new LerpButton[names.Length], names);
+            string[] names = PanelValues
+                        .Select(x =>
+                             x.GetType().Name
+                                .Substring(0, x.GetType().Name.Skip(1).TakeWhile(c => !char.IsUpper(c)).Count() + 1))
+                        .ToArray();
+            names[1] = "Slider";
+            PanelController = new ControlledPanel(PanelTrigger, panelOptions, new LerpButton[names.Length], names);
             Controllers.Add(PanelController);
             PanelController.Showing += (s, ev) =>
             {
@@ -580,27 +511,44 @@ namespace Dropper
                         PanelController.Hide();
             };
 
-            toolBar = new ToolBar();
-            toolBar.Dock = DockStyle.None;
-            toolBar.Anchor = AnchorStyles.None;
-            //toolBar.Location = new Point(PanelTrigger.Left, PanelTrigger.Bottom);
-            Controls.Add(toolBar);
-
-            //Paint += (s, ev) =>
-            //{
-            //    ev.Graphics.FillRectangle(new SolidBrush(Color.Red), PanelTrigger.Right, PanelTrigger.Top, PanelTrigger.Width, PanelTrigger.Height);
-            //};
+            var PanelButtons = panelOptions.Controls.OfType<LerpButton>().ToList();
+            for (int i = 0; i < PanelButtons.Count; i++)
+            {
+                int b = i;
+                var button = PanelButtons[b];
+                button.MouseDown += (s, ev) =>
+                {
+                    if (ev.Button == MouseButtons.Left)
+                    {
+                        button.On = !button.On;
+                        ShowToolBar?.Invoke(PanelButtons.Any(x => x.On));
+                        button.ForeColor = button.On ? Color.CornflowerBlue : Color.White;
+                    }
+                    switch (b)
+                    {
+                        case 0: ShowWeightPanel?.Invoke(); break;
+                        case 1: ShowSlider?.Invoke(); break;
+                        case 2: ShowExpanded?.Invoke(); break;
+                        case 3: ShowPivot?.Invoke(); break;
+                        case 4: ShowGravity?.Invoke(); break;
+                    }
+                };
+            }
         }
+        public event Action ShowWeightPanel;
+        public event Action ShowSlider;
+        public event Action ShowExpanded;
+        public event Action ShowPivot;
+        public event Action ShowGravity;
 
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
 
+            closingButton.Size = new Size(ClientSize.Height, ClientSize.Height);
             closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
+            minimizeButton.Size = closingButton.Size;
             QOL.Align.Left(minimizeButton, closingButton, 4);
-
-            toolBar.Location = new Point(0, 40);
-            toolBar.Size = new Size(50, 20);
         }
         public void Drag()
         {
@@ -651,14 +599,14 @@ namespace Dropper
         public event EventHandler Showing;
 
         private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
-        private readonly int AnimationSpeed;
+        private int AnimationSpeed;
         private readonly int TargetHeight;
         private bool Expanding = false;
 
         public ControlledPanel(
             LerpButton trigger, CustomPanel options,
             LerpButton[] optionButtons, string[] names,
-            int animationSpeed = 1
+            int animationSpeed = 5
             )
         {
             Trigger = trigger;
@@ -668,7 +616,6 @@ namespace Dropper
 
             options.Visible = false;
             options.Width = Trigger.Width;
-            options.Location = new Point(Trigger.Left, Trigger.Bottom);
             options.Height = 0;
 
             for (int i = 0; i < optionButtons.Length; i++)
@@ -704,6 +651,7 @@ namespace Dropper
                         Options.Height = 0;
                         Options.Visible = false;
                         AnimationTimer.Stop();
+                        AnimationSpeed = Math.Min(++AnimationSpeed, 10);
                     }
                 }
             };
@@ -719,6 +667,9 @@ namespace Dropper
         public void Show(object sender, EventArgs e)
         {
             Showing?.Invoke(sender, EventArgs.Empty);
+
+            Point triggerBottomLeft = Trigger.Parent.PointToScreen(new Point(Trigger.Left, Trigger.Bottom));
+            Options.Location = Options.Parent.PointToClient(triggerBottomLeft);
 
             Options.Visible = true;
             Expanding = true;
@@ -739,7 +690,7 @@ namespace Dropper
             if (!panel.Visible)
                 return false;
 
-            if (panel.Bounds.Contains(Trigger.Parent.PointToClient(Cursor.Position)))
+            if (panel.Bounds.Contains(panel.Parent.PointToClient(Cursor.Position)))
                 return true;
 
             foreach (Button button in panel.Controls.OfType<Button>())
@@ -800,6 +751,8 @@ namespace Dropper
 }
 using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -807,32 +760,99 @@ namespace Dropper
     public partial class Form1 : Form
     {
         private Blocks blocks;
-        private readonly Gravity gravity = new Gravity();
+        private Gravity gravity;
 
         private ControlBar controlBar;
-        private Area area;
+        private ToolbarPanel toolBar;
+        private GameArea gameArea;
+        private Floor floor;
 
+        private CustomPanel PanelOptions;
 
         public Form1() => InitializeComponent();
 
         private void Form1_Load(object sender, EventArgs e)
         {
             ConfigureForm();
-            LoadArea();
+            HoodooVoodooBlockMagic();
 
             blocks = new Blocks();
-            blocks.Redraw += () => area.gameArea.Invalidate();
-            blocks.ChangeFocus += block => ChangeBlockFocused(block);
+            blocks.Redraw += () => gameArea.Invalidate();
+            blocks.ChangeFocus += block => ChangeFocusedBlock(block);
             blocks.ConfigureBlock += ConfigureBlock;
 
+            gravity = new Gravity();
+            gravity.Redraw += () => gameArea.Invalidate();
             gravity.SplitBlock += block => blocks.Split(block);
-            area.gameArea.SplitBlock += block => blocks.Split(block);
-            area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
-            blocks.Add();
 
+            toolBar = new ToolbarPanel(gravity);
+            PanelOptions = new CustomPanel()
+            {
+                Height = 160,
+                BackColor = QOL.RandomColor(),
+            };
+            controlBar = new ControlBar(toolBar.Values, PanelOptions);
+            gameArea = new GameArea();
+            floor = new Floor();
+
+            Controls.Add(PanelOptions);
+            Controls.Add(toolBar);
+            Controls.Add(gameArea);
+            Controls.Add(controlBar);
+            Controls.Add(floor);
+
+            gameArea.Dock = DockStyle.Fill;
+
+            controlBar.Height = 54;
+            controlBar.Dock = DockStyle.Top;
+
+            toolBar.Size = new Size(ClientSize.Width, 98);
+            toolBar.Location = new Point(0, controlBar.Bottom);
+            toolBar.Values.ForEach(x => x.Visible = false);
+            toolBar.Visible = false;
+            toolBar.Dock = DockStyle.None;
+
+            floor.Height = 32;
+            floor.Dock = DockStyle.Bottom;
+
+            controlBar.ShowToolBar += show =>
+            {
+                var timer = new Timer { Interval = 10 };
+                int target = show ? 98 : 0;
+
+                foreach (var block in Blocks.Stack)
+                    block.UserBounds = new Rectangle(
+                        gameArea.Location.X, 
+                            gameArea.Location.Y + (show ? 44 : -54), // i have no earthly idea why the magic numbers are 44 and -54. i never will
+                        gameArea.Width, // UPDATE!!: 54 is controlbar's width. 44 remains a complete mystery
+                    gameArea.Height - (show ? 98 : 0)); //UPDATE 2: replacing -54 with -controlBar.Height breaks everything. i am mystified
+                
+
+                timer.Tick += (s, ev) =>
+                {
+                    int step = show ? 6 : -6;
+                    toolBar.Height += step;
+                    if (toolBar.Height >= target && show || toolBar.Height <= target && !show)
+                    {
+                        toolBar.Height = target;
+                        timer.Stop();
+                    }
+                    toolBar.Visible = toolBar.Height > 0;
+                };
+
+                if (show) toolBar.Visible = true;
+                timer.Start();
+            };
+            controlBar.ShowWeightPanel += () => toolBar.weightPanel.Visible = !toolBar.weightPanel.Visible;
+            controlBar.ShowSlider += () => toolBar.weightSlider.Visible = !toolBar.weightSlider.Visible;
+            controlBar.ShowExpanded += () => toolBar.expandedWeightMenu.Visible = !toolBar.expandedWeightMenu.Visible;
+            controlBar.ShowPivot += () => toolBar.pivotPanel.Visible = !toolBar.pivotPanel.Visible;
+            controlBar.ShowGravity += () => toolBar.gravityPanel.Visible = !toolBar.gravityPanel.Visible; gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
+            gameArea.SplitBlock += block => blocks.Split(block);
+
+            blocks.Add();
             gravity.Start(Blocks.Stack);
             //KeyMovement();
-            HoodooVoodooBlockMagic();
         }
 
         private void ConfigureForm()
@@ -845,17 +865,10 @@ namespace Dropper
             DoubleBuffered = true;
             CenterToScreen();
 
-            controlBar = new ControlBar();
-            controlBar.Size = new Size(ClientSize.Width, 198);
-            Controls.Add(controlBar);
-
-            //FormClosing += (s, ev) =>
-            //{
-            //    if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
-            //        Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
-            //};
+            FormClosing += (s, ev) =>
+                Application.RemoveMessageFilter(toolBar.weightPanel.WeightDisplayFilter);
         }
-        private void ChangeBlockFocused(Block block)
+        private void ChangeFocusedBlock(Block block)
         {
             if (block == blocks.Target)
                 return;
@@ -865,8 +878,8 @@ namespace Dropper
             blocks.Target = block;
             blocks.Target.Active = true;
 
-            area.SetTarget(block);
-            area.gameArea.Invalidate();
+            toolBar.SetTarget(block);
+            gameArea.Invalidate();
         }
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
@@ -896,15 +909,16 @@ namespace Dropper
                             blocks.Target.HalveSize();
                     }
                     else
-                        if (blocks.Target.W <= area.gameArea.Width / 2 && blocks.Target.H <= area.gameArea.Height / 2)
+                        if (blocks.Target.W <= gameArea.Width / 2 && blocks.Target.H <= gameArea.Height / 2)
                         blocks.Target.DoubleSize();
-                    area.gameArea.Invalidate();
+                    gameArea.Invalidate();
                 }
                 if (ev.KeyCode == Keys.Back)
                 {
-                    //if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
-                    //    blocks.Remove();
-                    //area.gameArea.Invalidate();
+                    if (toolBar.weightPanel.weightDisplay.ContainsFocus)
+                        return;
+                    blocks.Remove();
+                    gameArea.Invalidate();
                 }
             };
 
@@ -914,29 +928,20 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-        private void LoadArea()
-        {
-            area = new Area
-            {
-                Size = new Size(ClientSize.Width, ClientSize.Height - controlBar.Height),
-                Location = new Point(0, controlBar.Height)
-            };
-            area.Build(gravity);
-            Controls.Add(area);
-        }
+
         private void ConfigureBlock(Block block)
         {
             block.OriginalWeight = block.Weight;
-            block.UserBounds = area.gameArea.ClientRectangle;
+            block.UserBounds = gameArea.ClientRectangle;
 
             Block.StartPoint = new Point(
-                (int)(area.gameArea.Width / 2 - block.W / 2),
-                (int)(area.gameArea.ClientSize.Height - block.H));
+                (int)(gameArea.Width / 2 - block.W / 2),
+                (int)(gameArea.ClientSize.Height - block.H));
             block.Bounds = new RectangleF(Block.StartPoint, block.Size);
 
             block.MagneticCore = new Point(
-                (int)(area.gameArea.Width / 2 - block.W / 2),
-                (int)(area.gameArea.Height / 2 - block.H / 2));
+                (int)(gameArea.Width / 2 - block.W / 2),
+                (int)(gameArea.Height / 2 - block.H / 2));
         }
     }
 }
@@ -1801,10 +1806,12 @@ namespace Dropper
 {
     public class LerpButton : Button
     {
+        public bool On { get; set; }
+
         public Color BaseColor { get; set; } = QOL.RGB(35);
         private readonly Color HoverColor = QOL.RGB(60);
         private readonly Color BorderHoverColor = QOL.RGB(80);
-        private Color? ClickColor { get; set; }
+        public Color? ClickColor { get; set; }
         private bool ShowBorder = false;
         private Color CurrentColor;
 
@@ -2266,13 +2273,15 @@ namespace Dropper
 {
     public class ToolbarPanel : CustomPanel
     {
+        private Gravity Gravity;
+
         public WeightPanel weightPanel;
         public WeightSlider weightSlider;
         public ExpandedWeightMenu expandedWeightMenu;
         public PivotPanel pivotPanel;
         public GravityPanel gravityPanel;
 
-        public enum Panels { Weight, SLider, Expanded, Pivot, Gravity }
+        public List<CustomPanel> Values = new List<CustomPanel>();
 
         private bool built = false;
         private Block targetBlock;
@@ -2286,11 +2295,32 @@ namespace Dropper
             expandedWeightMenu.SetTarget(targetBlock);
             pivotPanel.SetTarget(targetBlock);
             gravityPanel.SetTarget(targetBlock);
+
+            Gravity.VXChanged += newVX =>
+            {
+                if (block.Gravity == Block.GravityMode.Dynamic)
+                    gravityPanel.displayVX.Text = $"{newVX:F1}";
+            };
+            Gravity.VYChanged += newVY =>
+            {
+                if (block.Gravity == Block.GravityMode.Dynamic)
+                    gravityPanel.displayVY.Text = $"{newVY:F1}";
+            };
+
+            Gravity.Redraw += () =>
+            {
+                if (block.Gravity != Block.GravityMode.Dynamic)
+                {
+                    gravityPanel.displayVX.Text = "";
+                    gravityPanel.displayVY.Text = "";
+                }
+            };
         }
 
         public ToolbarPanel(Gravity gravity)
         {
-            BackColor = QOL.RGB(150);
+            Gravity = gravity;
+            BackColor = QOL.RGB(50);
 
             weightPanel = new WeightPanel();
             weightSlider = new WeightSlider();
@@ -2298,11 +2328,10 @@ namespace Dropper
             pivotPanel = new PivotPanel(gravity);
             gravityPanel = new GravityPanel();
 
-            Controls.Add(weightPanel);
-            Controls.Add(weightSlider);
-            Controls.Add(expandedWeightMenu);
-            Controls.Add(pivotPanel);
-            Controls.Add(gravityPanel);
+            Values.AddRange(new CustomPanel[] { weightPanel, weightSlider, expandedWeightMenu, pivotPanel, gravityPanel });
+
+            foreach (var value in Values)
+                Controls.Add(value);
 
             if (!built)
                 Build();
@@ -2566,7 +2595,6 @@ namespace Dropper
         {
             BackColor = Color.Transparent;
             DoubleBuffered = true;
-            Visible = true;
 
             bar = new TrackBarOverlayed
             {

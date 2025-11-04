@@ -13,14 +13,14 @@ namespace Dropper
         public event EventHandler Showing;
 
         private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
-        private readonly int AnimationSpeed;
+        private int AnimationSpeed;
         private readonly int TargetHeight;
         private bool Expanding = false;
 
         public ControlledPanel(
             LerpButton trigger, CustomPanel options,
             LerpButton[] optionButtons, string[] names,
-            int animationSpeed = 1
+            int animationSpeed = 5
             )
         {
             Trigger = trigger;
@@ -30,7 +30,6 @@ namespace Dropper
 
             options.Visible = false;
             options.Width = Trigger.Width;
-            options.Location = new Point(Trigger.Left, Trigger.Bottom);
             options.Height = 0;
 
             for (int i = 0; i < optionButtons.Length; i++)
@@ -66,6 +65,7 @@ namespace Dropper
                         Options.Height = 0;
                         Options.Visible = false;
                         AnimationTimer.Stop();
+                        AnimationSpeed = Math.Min(++AnimationSpeed, 10);
                     }
                 }
             };
@@ -81,6 +81,9 @@ namespace Dropper
         public void Show(object sender, EventArgs e)
         {
             Showing?.Invoke(sender, EventArgs.Empty);
+
+            Point triggerBottomLeft = Trigger.Parent.PointToScreen(new Point(Trigger.Left, Trigger.Bottom));
+            Options.Location = Options.Parent.PointToClient(triggerBottomLeft);
 
             Options.Visible = true;
             Expanding = true;
@@ -101,7 +104,7 @@ namespace Dropper
             if (!panel.Visible)
                 return false;
 
-            if (panel.Bounds.Contains(Trigger.Parent.PointToClient(Cursor.Position)))
+            if (panel.Bounds.Contains(panel.Parent.PointToClient(Cursor.Position)))
                 return true;
 
             foreach (Button button in panel.Controls.OfType<Button>())
