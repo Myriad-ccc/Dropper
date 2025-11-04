@@ -25,8 +25,6 @@ namespace Dropper
 
         private void Build()
         {
-            Width = 144;
-
             BackColor = Color.Transparent;
             DoubleBuffered = true;
             Visible = true;

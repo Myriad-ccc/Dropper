@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -10,13 +11,20 @@ namespace Dropper
         private readonly CustomButton closingButton;
         private readonly CustomButton minimizeButton;
 
+        private readonly ToolbarPanel toolBar = new ToolbarPanel();
+
         private readonly List<ControlledPanel> Controllers = new List<ControlledPanel>();
+        private readonly LerpButton PanelTrigger;
+        private readonly CustomPanel PanelOptions;
         private readonly ControlledPanel PanelController;
 
         public ControlBar()
         {
             Drag();
             BackColor = QOL.RGB(35);
+
+            toolBar.Visible = false;
+            Controls.Add(toolBar);
 
             closingButton = new CustomButton()
             {
@@ -46,23 +54,28 @@ namespace Dropper
             minimizeButton.MouseClick += (s, ev) => FindForm().WindowState = FormWindowState.Minimized;
             Controls.Add(minimizeButton);
 
-            var PanelTrigger = new LerpButton(0.00005f, QOL.RandomColor())
+            PanelTrigger = new LerpButton(0.00005f, QOL.RandomColor())
             {
                 BackColor = QOL.RandomColor(),
                 Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Underline),
                 Text = "Paneling",
-                AutoSize = true,
+                Size = new Size(140, 40)
             };
             Controls.Add(PanelTrigger);
 
-            var PanelOptions = new CustomPanel()
+            PanelOptions = new CustomPanel()
             {
                 Height = 160,
                 BackColor = QOL.RandomColor(),
             };
             Controls.Add(PanelOptions);
 
-            string[] names = { "Weight", "Expanded", "Slider", "Pivot", "Gravity"};
+            string[] names = toolBar.Values
+                        .Select(x =>
+                             x.GetType().Name
+                                .Substring(0, x.GetType().Name.Skip(1).TakeWhile(c => !char.IsUpper(c)).Count() + 1))
+                        .ToArray();
+            names[1] = "Slider";
             PanelController = new ControlledPanel(PanelTrigger, PanelOptions, new LerpButton[names.Length], names);
             Controllers.Add(PanelController);
             PanelController.Showing += (s, ev) =>
@@ -81,6 +94,9 @@ namespace Dropper
 
             closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
             QOL.Align.Left(minimizeButton, closingButton, 4);
+
+            toolBar.Location = new Point(PanelTrigger.Left, PanelTrigger.Bottom);
+            toolBar.Size = new Size(ClientSize.Width, ClientSize.Height - PanelTrigger.Height);
         }
         public void Drag()
         {

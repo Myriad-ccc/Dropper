@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -11,6 +12,8 @@ namespace Dropper
         public ExpandedWeightMenu expandedWeightMenu;
         public PivotPanel pivotPanel;
         public GravityPanel gravityPanel;
+
+        public List<CustomPanel> Values = new List<CustomPanel>();
 
         private bool built = false;
         private Block targetBlock;
@@ -26,21 +29,22 @@ namespace Dropper
             gravityPanel.SetTarget(targetBlock);
         }
 
-        public ToolbarPanel(Gravity gravity)
+        public ToolbarPanel()
         {
-            BackColor = QOL.RGB(50);
-
             weightPanel = new WeightPanel();
             weightSlider = new WeightSlider();
             expandedWeightMenu = new ExpandedWeightMenu();
-            pivotPanel = new PivotPanel(gravity);
+            pivotPanel = new PivotPanel();
             gravityPanel = new GravityPanel();
 
-            Controls.Add(weightPanel);
-            Controls.Add(weightSlider);
-            Controls.Add(expandedWeightMenu);
-            Controls.Add(pivotPanel);
-            Controls.Add(gravityPanel);
+            Values.Add(weightPanel);
+            Values.Add(weightSlider);
+            Values.Add(expandedWeightMenu);
+            Values.Add(pivotPanel);
+            Values.Add(gravityPanel);
+
+            foreach (var value in Values)
+                Controls.Add(value);
 
             if (!built)
                 Build();
@@ -85,16 +89,21 @@ namespace Dropper
         {
             base.OnLayout(e);
 
+            weightPanel.Size = new Size(264, 24);
             QOL.ClampControlWidth(weightPanel);
 
+            weightSlider.Width = 144;
             QOL.ClampControlWidth(weightSlider);
             QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
 
+            expandedWeightMenu.Size = new Size(144, 72);
             QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
 
+            pivotPanel.Size = new Size(120, 100);
             QOL.ClampControlWidth(pivotPanel);
             pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
 
+            gravityPanel.Size = new Size(200, 100);
             QOL.ClampControlWidth(gravityPanel, 40);
             QOL.Align.Right(gravityPanel, pivotPanel, 16);
         }

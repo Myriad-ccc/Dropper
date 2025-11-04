@@ -49,11 +49,11 @@ namespace Dropper
             controlBar.Size = new Size(ClientSize.Width, 198);
             Controls.Add(controlBar);
 
-            FormClosing += (s, ev) =>
-            {
-                if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
-                    Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
-            };
+            //FormClosing += (s, ev) =>
+            //{
+            //    if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
+            //        Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
+            //};
         }
         private void ChangeBlockFocused(Block block)
         {
@@ -102,9 +102,9 @@ namespace Dropper
                 }
                 if (ev.KeyCode == Keys.Back)
                 {
-                    if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
-                        blocks.Remove();
-                    area.gameArea.Invalidate();
+                    //if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
+                    //    blocks.Remove();
+                    //area.gameArea.Invalidate();
                 }
             };
 
