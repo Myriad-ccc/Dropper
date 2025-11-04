@@ -46,9 +46,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Area.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Block.cs" />
     <Compile Include="Card.cs">
       <SubType>Component</SubType>

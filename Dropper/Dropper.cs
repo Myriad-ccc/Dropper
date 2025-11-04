@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -7,32 +8,79 @@ namespace Dropper
     public partial class Form1 : Form
     {
         private Blocks blocks;
-        private readonly Gravity gravity = new Gravity();
+        private Gravity gravity;
 
         private ControlBar controlBar;
-        private Area area;
-
+        private ToolbarPanel toolBar;
+        private GameArea gameArea;
+        private Floor floor;
 
         public Form1() => InitializeComponent();
 
         private void Form1_Load(object sender, EventArgs e)
         {
             ConfigureForm();
-            LoadArea();
+            HoodooVoodooBlockMagic();
 
             blocks = new Blocks();
-            blocks.Redraw += () => area.gameArea.Invalidate();
-            blocks.ChangeFocus += block => ChangeBlockFocused(block);
+            blocks.Redraw += () => gameArea.Invalidate();
+            blocks.ChangeFocus += block => ChangeFocusedBlock(block);
             blocks.ConfigureBlock += ConfigureBlock;
 
+            gravity = new Gravity();
+            gravity.Redraw += () => gameArea.Invalidate();
             gravity.SplitBlock += block => blocks.Split(block);
-            area.gameArea.SplitBlock += block => blocks.Split(block);
-            area.gameArea.FocusedBlockChanged += block => ChangeBlockFocused(block);
-            blocks.Add();
 
+            toolBar = new ToolbarPanel(gravity);
+            controlBar = new ControlBar(toolBar.Values);
+            gameArea = new GameArea();
+            floor = new Floor();
+
+            Controls.Add(toolBar);
+            Controls.Add(controlBar);
+            Controls.Add(gameArea);
+            Controls.Add(floor);
+
+            gameArea.BringToFront();
+            gameArea.Dock = DockStyle.Fill;
+
+            toolBar.Height = 98;
+            toolBar.Dock = DockStyle.Top;
+            toolBar.Values.Select(x => x.Visible = false);
+            toolBar.Visible = false;
+
+            controlBar.Height = 64;
+            controlBar.Dock = DockStyle.Top;
+
+            floor.Height = 32;
+            floor.Dock = DockStyle.Bottom;
+
+            controlBar.ShowToolBar += show =>
+            {
+                var timer = new Timer { Interval = 10 };
+                int target = show ? 98 : 0;
+
+                timer.Tick += (s, ev) =>
+                {
+                    int step = show ? 6 : -6;
+                    toolBar.Height += step;
+                    if (toolBar.Height >= target && show || toolBar.Height <= target && !show)
+                    {
+                        toolBar.Height = target;
+                        timer.Stop();
+                    }
+                    toolBar.Visible = toolBar.Height > 0;
+                };
+
+                if (show) toolBar.Visible = true;
+                timer.Start();
+            };
+            gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
+            gameArea.SplitBlock += block => blocks.Split(block);
+
+            blocks.Add();
             gravity.Start(Blocks.Stack);
             //KeyMovement();
-            HoodooVoodooBlockMagic();
         }
 
         private void ConfigureForm()
@@ -45,17 +93,10 @@ namespace Dropper
             DoubleBuffered = true;
             CenterToScreen();
 
-            controlBar = new ControlBar();
-            controlBar.Size = new Size(ClientSize.Width, 198);
-            Controls.Add(controlBar);
-
-            //FormClosing += (s, ev) =>
-            //{
-            //    if (area?.toolBar?.weightPanel?.WeightDisplayFilter != null)
-            //        Application.RemoveMessageFilter(area?.toolBar?.weightPanel?.WeightDisplayFilter);
-            //};
+            FormClosing += (s, ev) =>
+                Application.RemoveMessageFilter(toolBar.weightPanel.WeightDisplayFilter);
         }
-        private void ChangeBlockFocused(Block block)
+        private void ChangeFocusedBlock(Block block)
         {
             if (block == blocks.Target)
                 return;
@@ -65,8 +106,8 @@ namespace Dropper
             blocks.Target = block;
             blocks.Target.Active = true;
 
-            area.SetTarget(block);
-            area.gameArea.Invalidate();
+            toolBar.SetTarget(block);
+            gameArea.Invalidate();
         }
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
@@ -96,15 +137,16 @@ namespace Dropper
                             blocks.Target.HalveSize();
                     }
                     else
-                        if (blocks.Target.W <= area.gameArea.Width / 2 && blocks.Target.H <= area.gameArea.Height / 2)
+                        if (blocks.Target.W <= gameArea.Width / 2 && blocks.Target.H <= gameArea.Height / 2)
                         blocks.Target.DoubleSize();
-                    area.gameArea.Invalidate();
+                    gameArea.Invalidate();
                 }
                 if (ev.KeyCode == Keys.Back)
                 {
-                    //if (!area.toolBar.weightPanel.weightDisplay.ContainsFocus)
-                    //    blocks.Remove();
-                    //area.gameArea.Invalidate();
+                    if (toolBar.weightPanel.weightDisplay.ContainsFocus)
+                        return;
+                    blocks.Remove();
+                    gameArea.Invalidate();
                 }
             };
 
@@ -114,29 +156,20 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-        private void LoadArea()
-        {
-            area = new Area
-            {
-                Size = new Size(ClientSize.Width, ClientSize.Height - controlBar.Height),
-                Location = new Point(0, controlBar.Height)
-            };
-            area.Build(gravity);
-            Controls.Add(area);
-        }
+
         private void ConfigureBlock(Block block)
         {
             block.OriginalWeight = block.Weight;
-            block.UserBounds = area.gameArea.ClientRectangle;
+            block.UserBounds = gameArea.ClientRectangle;
 
             Block.StartPoint = new Point(
-                (int)(area.gameArea.Width / 2 - block.W / 2),
-                (int)(area.gameArea.ClientSize.Height - block.H));
+                (int)(gameArea.Width / 2 - block.W / 2),
+                (int)(gameArea.ClientSize.Height - block.H));
             block.Bounds = new RectangleF(Block.StartPoint, block.Size);
 
             block.MagneticCore = new Point(
-                (int)(area.gameArea.Width / 2 - block.W / 2),
-                (int)(area.gameArea.Height / 2 - block.H / 2));
+                (int)(gameArea.Width / 2 - block.W / 2),
+                (int)(gameArea.Height / 2 - block.H / 2));
         }
     }
 }

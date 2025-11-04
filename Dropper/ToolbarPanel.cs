@@ -7,6 +7,8 @@ namespace Dropper
 {
     public class ToolbarPanel : CustomPanel
     {
+        private Gravity Gravity;
+
         public WeightPanel weightPanel;
         public WeightSlider weightSlider;
         public ExpandedWeightMenu expandedWeightMenu;
@@ -27,21 +29,40 @@ namespace Dropper
             expandedWeightMenu.SetTarget(targetBlock);
             pivotPanel.SetTarget(targetBlock);
             gravityPanel.SetTarget(targetBlock);
+
+            Gravity.VXChanged += newVX =>
+            {
+                if (block.Gravity == Block.GravityMode.Dynamic)
+                    gravityPanel.displayVX.Text = $"{newVX:F1}";
+            };
+            Gravity.VYChanged += newVY =>
+            {
+                if (block.Gravity == Block.GravityMode.Dynamic)
+                    gravityPanel.displayVY.Text = $"{newVY:F1}";
+            };
+
+            Gravity.Redraw += () =>
+            {
+                if (block.Gravity != Block.GravityMode.Dynamic)
+                {
+                    gravityPanel.displayVX.Text = "";
+                    gravityPanel.displayVY.Text = "";
+                }
+            };
         }
 
-        public ToolbarPanel()
+        public ToolbarPanel(Gravity gravity)
         {
+            Gravity = gravity;
+            BackColor = QOL.RGB(50);
+
             weightPanel = new WeightPanel();
             weightSlider = new WeightSlider();
             expandedWeightMenu = new ExpandedWeightMenu();
-            pivotPanel = new PivotPanel();
+            pivotPanel = new PivotPanel(gravity);
             gravityPanel = new GravityPanel();
 
-            Values.Add(weightPanel);
-            Values.Add(weightSlider);
-            Values.Add(expandedWeightMenu);
-            Values.Add(pivotPanel);
-            Values.Add(gravityPanel);
+            Values.AddRange(new CustomPanel[] { weightPanel, weightSlider, expandedWeightMenu, pivotPanel, gravityPanel });
 
             foreach (var value in Values)
                 Controls.Add(value);

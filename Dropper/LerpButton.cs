@@ -6,6 +6,8 @@ namespace Dropper
 {
     public class LerpButton : Button
     {
+        public bool On { get; set; }
+
         public Color BaseColor { get; set; } = QOL.RGB(35);
         private readonly Color HoverColor = QOL.RGB(60);
         private readonly Color BorderHoverColor = QOL.RGB(80);

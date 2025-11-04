@@ -11,20 +11,17 @@ namespace Dropper
         private readonly CustomButton closingButton;
         private readonly CustomButton minimizeButton;
 
-        private readonly ToolbarPanel toolBar = new ToolbarPanel();
-
         private readonly List<ControlledPanel> Controllers = new List<ControlledPanel>();
         private readonly LerpButton PanelTrigger;
         private readonly CustomPanel PanelOptions;
         private readonly ControlledPanel PanelController;
 
-        public ControlBar()
+        public event Action<bool> ShowToolBar;
+
+        public ControlBar(List<CustomPanel> PanelValues)
         {
             Drag();
             BackColor = QOL.RGB(35);
-
-            toolBar.Visible = false;
-            Controls.Add(toolBar);
 
             closingButton = new CustomButton()
             {
@@ -70,7 +67,7 @@ namespace Dropper
             };
             Controls.Add(PanelOptions);
 
-            string[] names = toolBar.Values
+            string[] names = PanelValues
                         .Select(x =>
                              x.GetType().Name
                                 .Substring(0, x.GetType().Name.Skip(1).TakeWhile(c => !char.IsUpper(c)).Count() + 1))
@@ -86,6 +83,20 @@ namespace Dropper
                     if (controller != showingController)
                         PanelController.Hide();
             };
+
+            foreach (var value in PanelOptions.Controls.OfType<LerpButton>())
+            {
+                value.MouseDown += (s, ev) =>
+                {
+                    if (ev.Button == MouseButtons.Left)
+                    {
+                        value.On = !value.On;
+                        if (PanelOptions.Controls.OfType<LerpButton>().Any(x => x.On))
+                            ShowToolBar?.Invoke(true);
+                        else ShowToolBar?.Invoke(false);
+                    }
+                };
+            }
         }
 
         protected override void OnSizeChanged(EventArgs e)
@@ -94,9 +105,6 @@ namespace Dropper
 
             closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
             QOL.Align.Left(minimizeButton, closingButton, 4);
-
-            toolBar.Location = new Point(PanelTrigger.Left, PanelTrigger.Bottom);
-            toolBar.Size = new Size(ClientSize.Width, ClientSize.Height - PanelTrigger.Height);
         }
         public void Drag()
         {

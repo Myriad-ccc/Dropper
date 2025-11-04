@@ -14,7 +14,6 @@ namespace Dropper
         private Block targetBlock;
 
         public PivotPanel(Gravity gravity) => Gravity = gravity;
-        public PivotPanel() { }
 
         public void SetTarget(Block block)
         {
