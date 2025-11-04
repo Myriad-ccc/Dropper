@@ -54,6 +54,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ClickFilter.cs" />
+    <Compile Include="ControlledPanel.cs" />
     <Compile Include="CustomButton.cs">
       <SubType>Component</SubType>
     </Compile>

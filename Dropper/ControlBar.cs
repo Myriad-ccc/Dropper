@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Linq;
 
 namespace Dropper
 {
@@ -10,14 +10,8 @@ namespace Dropper
         private readonly CustomButton closingButton;
         private readonly CustomButton minimizeButton;
 
-        private readonly CustomPanel PanelingPanel = new CustomPanel();
-        private readonly LerpButton Paneling;
-
-        private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
-        private readonly int AnimationSpeed = 1;
-        private readonly int TargetHeight = 160;
-        private bool Expanding = false;
-
+        private readonly List<ControlledPanel> Controllers = new List<ControlledPanel>();
+        private readonly ControlledPanel PanelController;
 
         public ControlBar()
         {
@@ -52,58 +46,33 @@ namespace Dropper
             minimizeButton.MouseClick += (s, ev) => FindForm().WindowState = FormWindowState.Minimized;
             Controls.Add(minimizeButton);
 
-            Paneling = new LerpButton(0.00005f, QOL.RandomColor())
+            var PanelTrigger = new LerpButton(0.00005f, QOL.RandomColor())
             {
                 BackColor = QOL.RandomColor(),
                 Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Underline),
                 Text = "Paneling",
                 AutoSize = true,
             };
-            Controls.Add(Paneling);
+            Controls.Add(PanelTrigger);
 
-            PanelingPanel = new CustomPanel()
+            var PanelOptions = new CustomPanel()
             {
-                Width = Paneling.Width,
-                Height = 0,
-                Location = new Point(Paneling.Left, Paneling.Bottom),
+                Height = 160,
                 BackColor = QOL.RandomColor(),
-                Visible = false
             };
-            Controls.Add(PanelingPanel);
+            Controls.Add(PanelOptions);
 
-            AddButtons();
-
-            AnimationTimer.Tick += (s, ev) =>
+            string[] names = { "Weight", "Expanded", "Slider", "Pivot", "Gravity"};
+            PanelController = new ControlledPanel(PanelTrigger, PanelOptions, new LerpButton[names.Length], names);
+            Controllers.Add(PanelController);
+            PanelController.Showing += (s, ev) =>
             {
-                if (Expanding)
-                {
-                    int diff = TargetHeight - PanelingPanel.Height;
-                    PanelingPanel.Height += AnimationSpeed;
-                    if (PanelingPanel.Height >= TargetHeight)
-                    {
-                        PanelingPanel.Height = TargetHeight;
-                        AnimationTimer.Stop();
-                    }
-                }
-                else
-                {
-                    int diff = PanelingPanel.Height;
-                    PanelingPanel.Height -= AnimationSpeed;
-                    if (PanelingPanel.Height <= 0)
-                    {
-                        PanelingPanel.Height = 0;
-                        PanelingPanel.Visible = false;
-                        AnimationTimer.Stop();
-                    }
-                }
-            };
+                var showingController = s as ControlledPanel;
 
-            Paneling.Tag = PanelingPanel;
-            Paneling.MouseEnter += ShowMe;
-            Paneling.MouseLeave += CheckState;
-            PanelingPanel.MouseLeave += CheckState;
-            foreach (Control control in PanelingPanel.Controls.OfType<Button>())
-                control.MouseLeave += CheckState;
+                foreach (var controller in Controllers)
+                    if (controller != showingController)
+                        PanelController.Hide();
+            };
         }
 
         protected override void OnSizeChanged(EventArgs e)
@@ -113,7 +82,6 @@ namespace Dropper
             closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
             QOL.Align.Left(minimizeButton, closingButton, 4);
         }
-
         public void Drag()
         {
             bool MouseDragging = false;
@@ -145,72 +113,6 @@ namespace Dropper
                     Invalidate();
                 }
             };
-        }
-
-        private void ShowMe(object sender, EventArgs e)
-        {
-            foreach (Button sibling in Paneling.Parent.Controls.OfType<Button>())
-                if (sibling != Paneling && sibling.Tag is Panel siblingPanel)
-                    HideMe(siblingPanel);
-            PanelingPanel.Visible = true;
-            Expanding = true;
-            AnimationTimer.Start();
-        }
-
-        private void HideMe(Panel panel)
-        {
-            if (!panel.Visible)
-                return;
-
-            Expanding = false;
-            AnimationTimer.Start();
-        }
-
-        private bool Hovering(Panel panel)
-        {
-            if (!panel.Visible)
-                return false;
-
-            if (panel.Bounds.Contains(PointToClient(Cursor.Position)))
-                return true;
-
-            foreach (Button button in PanelingPanel.Controls.OfType<Button>())
-                if (button.Tag is Panel descendent)
-                    if (Hovering(descendent))
-                        return true;
-            return false;
-        }
-
-        private void CheckState(object sender, EventArgs e)
-        {
-            if (Paneling.Bounds.Contains(PointToClient(Cursor.Position)))
-                return;
-
-            if (Hovering(PanelingPanel))
-                return;
-
-            HideMe(PanelingPanel);
-        }
-
-        private void AddButtons()
-        {
-            int buttonCount = 5;
-            var buttons = new LerpButton[buttonCount];
-            string[] names = { "Weight", "Expanded", "Slider", "Pivot", "Gravity", "Empty" };
-
-            for (int i = 0; i < buttonCount; i++)
-            {
-                buttons[i] = new LerpButton(null, QOL.RGB(163, 42, 42))
-                {
-                    TabStop = false,
-                    FlatStyle = FlatStyle.Flat,
-                    Size = new Size(PanelingPanel.Width, TargetHeight / 5),
-                    Location = new Point(0, i * (TargetHeight / 5)),
-                    Font = new Font(QOL.VCROSDMONO, 16f),
-                    Text = names[i],
-                };
-                PanelingPanel.Controls.Add(buttons[i]);
-            }
         }
     }
 }
