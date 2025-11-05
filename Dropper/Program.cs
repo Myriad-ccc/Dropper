@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -14,6 +12,12 @@ namespace Dropper
         [STAThread]
         static void Main()
         {
+            string currentName = Process.GetCurrentProcess().ProcessName;
+            foreach (var process in Process.GetProcessesByName(currentName))
+            {
+                if (process.Id != Process.GetCurrentProcess().Id)
+                    process.Kill();
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());

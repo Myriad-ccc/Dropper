@@ -32,6 +32,19 @@ namespace Dropper
             int rightMost = control.Controls.Cast<Control>().Max(x => x.Right);
             control.Bounds = new Rectangle(control.Location, new Size(rightMost + (gap ?? 0), control.Height));
         }
+        public static void ClampControlHeight(Control control, int? gap = null)
+        {
+            if (control.Controls.Count == 0) return;
+            int bottomMost = control.Controls.Cast<Control>().Max(x => x.Bottom);
+            control.Bounds = new Rectangle(control.Location, new Size(control.Width, bottomMost + (gap ?? 0)));
+        }
+        public static void ClampControlSize(Control control, int? widthGap = null, int? heightGap = null)
+        {
+            if (control.Controls.Count == 0) return;
+            int rightMost = control.Controls.Cast<Control>().Max(x => x.Right);
+            int bottomMost = control.Controls.Cast<Control>().Max(x => x.Bottom);
+            control.Bounds = new Rectangle(control.Location, new Size(rightMost + (widthGap ?? 0), bottomMost + (heightGap ?? 0)));
+        }
 
         public static bool ValidInt32(int num) => num > int.MinValue && num < int.MaxValue;
         public static bool ValidFloat32(float num) => !float.IsNaN(num) && !float.IsInfinity(num);

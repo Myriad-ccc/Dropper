@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
 {
-    public class ToolbarPanel : CustomPanel
+    public class ToolBarPanel : CustomPanel
     {
-        private Gravity Gravity;
+        private readonly Gravity Gravity;
 
         public WeightPanel weightPanel;
         public WeightSlider weightSlider;
@@ -20,6 +21,8 @@ namespace Dropper
         private bool built = false;
         private Block targetBlock;
 
+        private bool LayoutInitialized = false;
+
         public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
@@ -29,6 +32,12 @@ namespace Dropper
             expandedWeightMenu.SetTarget(targetBlock);
             pivotPanel.SetTarget(targetBlock);
             gravityPanel.SetTarget(targetBlock);
+
+            if (!LayoutInitialized)
+            {
+                InitializeLayout();
+                LayoutInitialized = true;
+            }
 
             Gravity.VXChanged += newVX =>
             {
@@ -51,7 +60,7 @@ namespace Dropper
             };
         }
 
-        public ToolbarPanel(Gravity gravity)
+        public ToolBarPanel(Gravity gravity)
         {
             Gravity = gravity;
             BackColor = QOL.RGB(50);
@@ -71,6 +80,49 @@ namespace Dropper
                 Build();
         }
 
+        private void InitializeLayout()
+        {
+            foreach (var value in Values)
+            {
+                value.Draggable = true;
+                value.ParentBounds = ClientRectangle;
+
+                if (value == weightSlider) continue;
+                QOL.ClampControlSize(value);
+            }
+
+            if (!weightPanel.Added)
+            {
+                weightPanel.Location = new Point(0, 0);
+                weightPanel.Added = true;
+            }
+
+            weightSlider.Width = 144;
+            if (!weightSlider.Added)
+            {
+                QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
+                weightSlider.Added = true;
+            }
+
+            if (!expandedWeightMenu.Added)
+            {
+                QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
+                expandedWeightMenu.Added = true;
+            }
+
+            if (!pivotPanel.Added)
+            {
+                pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
+                pivotPanel.Added = true;
+            }
+
+            if (!gravityPanel.Added)
+            {
+                QOL.Align.Right(gravityPanel, pivotPanel, 16);
+                gravityPanel.Added = true;
+            }
+        }
+        
         public void Build()
         {
             built = true;
@@ -105,28 +157,10 @@ namespace Dropper
             expandedWeightMenu.MouseClick += (s, ev) => weightSlider.Visible = false;
             expandedWeightMenu.WeightChanged += OnWeightChanged;
         }
-
-        protected override void OnLayout(LayoutEventArgs e)
+        public new void Hide()
         {
-            base.OnLayout(e);
-
-            weightPanel.Size = new Size(264, 24);
-            QOL.ClampControlWidth(weightPanel);
-
-            weightSlider.Width = 144;
-            QOL.ClampControlWidth(weightSlider);
-            QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
-
-            expandedWeightMenu.Size = new Size(144, 72);
-            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
-
-            pivotPanel.Size = new Size(120, 100);
-            QOL.ClampControlWidth(pivotPanel);
-            pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
-
-            gravityPanel.Size = new Size(200, 100);
-            QOL.ClampControlWidth(gravityPanel, 40);
-            QOL.Align.Right(gravityPanel, pivotPanel, 16);
+            Visible = false;
+            Values.ForEach(x => x.Visible = false);
         }
     }
 }

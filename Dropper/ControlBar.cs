@@ -17,7 +17,7 @@ namespace Dropper
 
         public event Action<bool> ShowToolBar;
 
-        public ControlBar(List<CustomPanel> PanelValues, CustomPanel panelOptions)
+        public ControlBar(ToolBarPanel toolBar, CustomPanel panelOptions)
         {
             Drag();
             BackColor = QOL.RGB(35);
@@ -57,7 +57,7 @@ namespace Dropper
             };
             Controls.Add(PanelTrigger);
 
-            string[] names = PanelValues
+            string[] names = toolBar.Values
                         .Select(x =>
                              x.GetType().Name
                                 .Substring(0, x.GetType().Name.Skip(1).TakeWhile(c => !char.IsUpper(c)).Count() + 1))
@@ -84,25 +84,13 @@ namespace Dropper
                     if (ev.Button == MouseButtons.Left)
                     {
                         button.On = !button.On;
-                        ShowToolBar?.Invoke(PanelButtons.Any(x => x.On));
                         button.ForeColor = button.On ? Color.CornflowerBlue : Color.White;
-                    }
-                    switch (b)
-                    {
-                        case 0: ShowWeightPanel?.Invoke(); break;
-                        case 1: ShowSlider?.Invoke(); break;
-                        case 2: ShowExpanded?.Invoke(); break;
-                        case 3: ShowPivot?.Invoke(); break;
-                        case 4: ShowGravity?.Invoke(); break;
+                        toolBar.Values[b].Visible = button.On;
+                        ShowToolBar?.Invoke(PanelButtons.Any(x => x.On));
                     }
                 };
             }
         }
-        public event Action ShowWeightPanel;
-        public event Action ShowSlider;
-        public event Action ShowExpanded;
-        public event Action ShowPivot;
-        public event Action ShowGravity;
 
         protected override void OnSizeChanged(EventArgs e)
         {
@@ -113,6 +101,7 @@ namespace Dropper
             minimizeButton.Size = closingButton.Size;
             QOL.Align.Left(minimizeButton, closingButton, 4);
         }
+
         public void Drag()
         {
             bool MouseDragging = false;

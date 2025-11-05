@@ -12,7 +12,7 @@ namespace Dropper
         private Gravity gravity;
 
         private ControlBar controlBar;
-        private ToolbarPanel toolBar;
+        private ToolBarPanel toolBar;
         private GameArea gameArea;
         private Floor floor;
 
@@ -34,13 +34,13 @@ namespace Dropper
             gravity.Redraw += () => gameArea.Invalidate();
             gravity.SplitBlock += block => blocks.Split(block);
 
-            toolBar = new ToolbarPanel(gravity);
+            toolBar = new ToolBarPanel(gravity);
             PanelOptions = new CustomPanel()
             {
                 Height = 160,
                 BackColor = QOL.RandomColor(),
             };
-            controlBar = new ControlBar(toolBar.Values, PanelOptions);
+            controlBar = new ControlBar(toolBar, PanelOptions);
             gameArea = new GameArea();
             floor = new Floor();
 
@@ -55,11 +55,9 @@ namespace Dropper
             controlBar.Height = 54;
             controlBar.Dock = DockStyle.Top;
 
-            toolBar.Size = new Size(ClientSize.Width, 98);
+            toolBar.Size = new Size(ClientSize.Width, 0);
             toolBar.Location = new Point(0, controlBar.Bottom);
-            toolBar.Values.ForEach(x => x.Visible = false);
-            toolBar.Visible = false;
-            toolBar.Dock = DockStyle.None;
+            toolBar.Hide();
 
             floor.Height = 32;
             floor.Dock = DockStyle.Bottom;
@@ -71,15 +69,15 @@ namespace Dropper
 
                 foreach (var block in Blocks.Stack)
                     block.UserBounds = new Rectangle(
-                        gameArea.Location.X, 
+                        gameArea.Location.X,
                             gameArea.Location.Y + (show ? 44 : -54), // i have no earthly idea why the magic numbers are 44 and -54. i never will
                         gameArea.Width, // UPDATE!!: 54 is controlbar's width. 44 remains a complete mystery
                     gameArea.Height - (show ? 98 : 0)); //UPDATE 2: replacing -54 with -controlBar.Height breaks everything. i am mystified
-                
+
 
                 timer.Tick += (s, ev) =>
                 {
-                    int step = show ? 6 : -6;
+                    int step = show ? 5 : -5;
                     toolBar.Height += step;
                     if (toolBar.Height >= target && show || toolBar.Height <= target && !show)
                     {
@@ -92,11 +90,7 @@ namespace Dropper
                 if (show) toolBar.Visible = true;
                 timer.Start();
             };
-            controlBar.ShowWeightPanel += () => toolBar.weightPanel.Visible = !toolBar.weightPanel.Visible;
-            controlBar.ShowSlider += () => toolBar.weightSlider.Visible = !toolBar.weightSlider.Visible;
-            controlBar.ShowExpanded += () => toolBar.expandedWeightMenu.Visible = !toolBar.expandedWeightMenu.Visible;
-            controlBar.ShowPivot += () => toolBar.pivotPanel.Visible = !toolBar.pivotPanel.Visible;
-            controlBar.ShowGravity += () => toolBar.gravityPanel.Visible = !toolBar.gravityPanel.Visible; gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
+            gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
             gameArea.SplitBlock += block => blocks.Split(block);
 
             blocks.Add();
@@ -114,7 +108,7 @@ namespace Dropper
             DoubleBuffered = true;
             CenterToScreen();
 
-            FormClosing += (s, ev) =>
+            FormClosing += (s, ev) => //might be leaving some timers running unintentionally
                 Application.RemoveMessageFilter(toolBar.weightPanel.WeightDisplayFilter);
         }
         private void ChangeFocusedBlock(Block block)
