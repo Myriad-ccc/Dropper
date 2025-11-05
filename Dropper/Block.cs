@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Media;
-using System.Windows.Forms;
 
 namespace Dropper
 {
@@ -130,7 +128,6 @@ namespace Dropper
 
             Bounds = new RectangleF(new PointF(nx, ny), Size);
         }
-
         public void ResetVX() => VX = 0;
         public void ResetVY() => VY = 0;
         public void ResetVelocity()

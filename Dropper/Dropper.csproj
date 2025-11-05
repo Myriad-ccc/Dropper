@@ -58,6 +58,9 @@
     <Compile Include="CustomPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="CustomTextBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Dropper.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -44,12 +44,15 @@ namespace Dropper
                 Crack.DrawAll(g, block);
 
                 using (var borderPen = new Pen(block.InactiveBorderColor, (float)block.BorderWidth))
+                {
+                    borderPen.Alignment = PenAlignment.Inset;
                     g.DrawRectangle(
                         borderPen,
                         block.Bounds.X,
                         block.Bounds.Y,
                         block.Bounds.Width,
                         block.Bounds.Height);
+                }
 
                 if (debug)
                     using (var brush = new SolidBrush(Color.IndianRed))
@@ -84,6 +87,8 @@ namespace Dropper
                 Crack.DrawAll(g, block);
 
                 using (var borderPen = new Pen(block.ActiveBorderColor, (float)block.BorderWidth))
+                {
+                    borderPen.Alignment = PenAlignment.Inset;
                     g.DrawRectangle(
                         borderPen,
                         block.Bounds.X,
@@ -107,6 +112,7 @@ namespace Dropper
             }
 
         }
+                }
 
         private void Clicks()
         {

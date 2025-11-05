@@ -59,6 +59,7 @@ namespace Dropper
         public void Constrain(int GX = 0, int GY = 0)
         {
             if (UserBounds == Rectangle.Empty) return;
+            if (Weight == 0) return;
             float nx = X;
             float ny = Y;
             bool bouncingX = false;
@@ -71,7 +72,7 @@ namespace Dropper
                 if (Math.Abs(VX) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
-                nx = UserBounds.Left;
+                nx = UserBounds.Left; // + BorderWidth
                 VTX = (GX * Weight < 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && VX < -VTX && !bouncingX)
@@ -88,7 +89,7 @@ namespace Dropper
                 if (Math.Abs(VX) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
-                nx = UserBounds.Right - W;
+                nx = UserBounds.Right - W; // - BorderWidth
                 VTX = (GX * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingX && VX > VTX)
@@ -102,7 +103,7 @@ namespace Dropper
                 if (Math.Abs(VY) >= Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
-                ny = UserBounds.Top;
+                ny = UserBounds.Top; // + BorderWidth
                 VTY = (GY * Weight < 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingY && VY < -VTY)
@@ -119,7 +120,7 @@ namespace Dropper
                 if (Math.Abs(VY) == Math.Abs(TerminalVelocity) && Weight != 0)
                     Cracks.Add(new Crack(this));
 
-                ny = UserBounds.Bottom - H;
+                ny = UserBounds.Bottom - H; // - BorderWidth
                 VTY = (GY * Weight > 0) ? (Math.Abs(Weight) * deltaTime * gc) : 0;
 
                 if (CanBounce && !bouncingY && VY > VTY)
@@ -728,8 +729,6 @@ namespace Dropper
     public class CustomPanel : Panel
     {
         public bool Draggable { get; set; } = false;
-        public Rectangle ParentBounds { get; set; } = Rectangle.Empty; // intended to be used in tandem with the drag logic
-        public bool Added { get; set; } = false;
 
         public CustomPanel()
         {
@@ -745,10 +744,9 @@ namespace Dropper
 
         private bool Dragging;
         private Point CursorPosition;
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            base.OnMouseDown(e);
 
+        private void DoMouseDown(MouseEventArgs e)
+        {
             if (!Draggable) return;
             CursorPosition = Cursor.Position;
             if (e.Button == MouseButtons.Right)
@@ -757,27 +755,28 @@ namespace Dropper
                 CursorPosition = Cursor.Position;
             }
         }
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            base.OnMouseUp(e);
 
+        private void DoMouseUp(MouseEventArgs e)
+        {
             if (!Draggable) return;
             Dragging = false;
         }
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
 
+        private void DoMouseMove(MouseEventArgs e)
+        {
             if (!Draggable) return;
-            if (ParentBounds == Rectangle.Empty) return;
+            if (!Dragging) return;
+            if (Parent == null && Parent.ClientRectangle == Rectangle.Empty) return;
+
+            Rectangle parentBounds = Parent.ClientRectangle;
 
             if (Dragging)
             {
                 int deltaX = Cursor.Position.X - CursorPosition.X;
                 int deltaY = Cursor.Position.Y - CursorPosition.Y;
 
-                int nx = Math.Max(ParentBounds.Left, Math.Min(Location.X + deltaX, ParentBounds.Right - Width));
-                int ny = Math.Max(ParentBounds.Top, Math.Min(Location.Y + deltaY, ParentBounds.Bottom - Height));
+                int nx = Math.Max(parentBounds.Left, Math.Min(Location.X + deltaX, parentBounds.Right - Width));
+                int ny = Math.Max(parentBounds.Top, Math.Min(Location.Y + deltaY, parentBounds.Bottom - Height));
 
                 Bounds = new Rectangle(
                     new Point(
@@ -788,6 +787,72 @@ namespace Dropper
                 CursorPosition = Cursor.Position;
                 Invalidate();
             }
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            DoMouseDown(e);
+        }
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            DoMouseUp(e);
+        }
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            DoMouseMove(e);
+        }
+
+        private void WireControl(Control control)
+        {
+            control.MouseDown += DescendantMouseDown;
+            control.MouseUp += DescendantMouseUp;
+            control.MouseMove += DescendantMouseMove;
+
+            if (control.HasChildren)
+                foreach (Control c in control.Controls)
+                    WireControl(c);
+        }
+
+        private void UnwireControl(Control control)
+        {
+            control.MouseDown -= DescendantMouseDown;
+            control.MouseUp -= DescendantMouseUp;
+            control.MouseMove -= DescendantMouseMove;
+
+            if (control.HasChildren)
+                foreach (Control c in control.Controls)
+                    UnwireControl(c);
+        }
+
+        private void DescendantMouseDown(object sender, MouseEventArgs e) => DoMouseDown(e);
+        private void DescendantMouseUp(object sender, MouseEventArgs e) => DoMouseUp(e);
+        private void DescendantMouseMove(object sender, MouseEventArgs e) => DoMouseMove(e);
+
+        protected override void OnControlAdded(ControlEventArgs e)
+        {
+            base.OnControlAdded(e);
+            WireControl(e.Control);
+        }
+    }
+}
+using System.Windows.Forms;
+
+namespace Dropper
+{
+    public class CustomTextBox : TextBox
+    {
+        private const int WM_CONTEXTMENU = 0x007B;
+
+        public CustomTextBox() => ContextMenuStrip = new ContextMenuStrip();
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_CONTEXTMENU)
+                return;
+            base.WndProc(ref m);
         }
     }
 }
@@ -2339,6 +2404,8 @@ namespace Dropper
         private bool built = false;
         private Block targetBlock;
 
+        private bool LayoutInitialized = false;
+
         public void SetTarget(Block block)
         {
             targetBlock = block ?? throw new ArgumentNullException();
@@ -2348,6 +2415,12 @@ namespace Dropper
             expandedWeightMenu.SetTarget(targetBlock);
             pivotPanel.SetTarget(targetBlock);
             gravityPanel.SetTarget(targetBlock);
+
+            if (!LayoutInitialized)
+            {
+                InitializeLayout();
+                LayoutInitialized = true;
+            }
 
             Gravity.VXChanged += newVX =>
             {
@@ -2395,54 +2468,27 @@ namespace Dropper
             foreach (var value in Values)
             {
                 value.Draggable = true;
-                value.ParentBounds = ClientRectangle;
 
-                if (value == weightSlider || value == pivotPanel) continue;
+                if (value == weightSlider)
+                {
+                    QOL.ClampControlHeight(value);
+                    continue;
+                }
                 QOL.ClampControlSize(value);
             }
-
-            if (!weightPanel.Added)
-            {
-                weightPanel.Location = new Point(0, 0);
-                weightPanel.Added = true;
-            }
-
-            weightSlider.Width = 144;
-            if (!weightSlider.Added)
-            {
-                QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
-                weightSlider.Added = true;
-            }
-
-            if (!expandedWeightMenu.Added)
-            {
-                QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
-                expandedWeightMenu.Added = true;
-            }
-
-            if (!pivotPanel.Added)
-            {
-                pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
-                pivotPanel.Added = true;
-            }
-
-            if (!gravityPanel.Added)
-            {
-                QOL.Align.Right(gravityPanel, pivotPanel, 16);
-                gravityPanel.Added = true;
-            }
+            InitializeLocations();
         }
 
-        private bool LayoutInitialized = false;
-        protected override void OnLayout(LayoutEventArgs e)
+        private void InitializeLocations()
         {
-            base.OnLayout(e);
-            if (!LayoutInitialized)
-            {
-                InitializeLayout();
-                LayoutInitialized = true;
-            }
+            weightPanel.Location = Point.Empty;
+            weightSlider.Width = 144;
+            QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
+            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
+            pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
+            QOL.Align.Right(gravityPanel, pivotPanel, 16);
         }
+
         public void Build()
         {
             built = true;
@@ -2459,8 +2505,9 @@ namespace Dropper
                 {
                     if (newWeight > 0)
                         targetBlock.Weight = Math.Min(newWeight, 100000);
-                    if (newWeight < 0)
+                    else if (newWeight < 0)
                         targetBlock.Weight = Math.Max(newWeight, -100000);
+                    else targetBlock.Weight = 0;
                 }
                 else
                     targetBlock.Weight = targetBlock.OriginalWeight;
@@ -2481,6 +2528,13 @@ namespace Dropper
         {
             Visible = false;
             Values.ForEach(x => x.Visible = false);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (e.Button == MouseButtons.Middle)
+                InitializeLocations();
         }
     }
 }
@@ -2584,7 +2638,7 @@ namespace Dropper
                     ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
             };
 
-            weightDisplay = new TextBox()
+            weightDisplay = new CustomTextBox
             {
                 Anchor = AnchorStyles.Left,
                 TabStop = false,
@@ -2601,8 +2655,10 @@ namespace Dropper
                 {
                     if (newWeight > 0)
                         targetBlock.Weight = Math.Min(newWeight, 100000);
-                    if (newWeight < 0)
+                    else if (newWeight < 0)
                         targetBlock.Weight = Math.Max(newWeight, -100000);
+                    else
+                        newWeight = 0;
                 }
                 else targetBlock.Weight = targetBlock.OriginalWeight;
                 UpdateWeightDisplay();

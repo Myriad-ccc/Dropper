@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -85,44 +84,27 @@ namespace Dropper
             foreach (var value in Values)
             {
                 value.Draggable = true;
-                value.ParentBounds = ClientRectangle;
 
-                if (value == weightSlider) continue;
+                if (value == weightSlider)
+                {
+                    QOL.ClampControlHeight(value);
+                    continue;
+                }
                 QOL.ClampControlSize(value);
             }
-
-            if (!weightPanel.Added)
-            {
-                weightPanel.Location = new Point(0, 0);
-                weightPanel.Added = true;
-            }
-
-            weightSlider.Width = 144;
-            if (!weightSlider.Added)
-            {
-                QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
-                weightSlider.Added = true;
-            }
-
-            if (!expandedWeightMenu.Added)
-            {
-                QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
-                expandedWeightMenu.Added = true;
-            }
-
-            if (!pivotPanel.Added)
-            {
-                pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
-                pivotPanel.Added = true;
-            }
-
-            if (!gravityPanel.Added)
-            {
-                QOL.Align.Right(gravityPanel, pivotPanel, 16);
-                gravityPanel.Added = true;
-            }
+            InitializeLocations();
         }
-        
+
+        private void InitializeLocations()
+        {
+            weightPanel.Location = Point.Empty;
+            weightSlider.Width = 144;
+            QOL.Align.Bottom.Center(weightSlider, weightPanel, 8);
+            QOL.Align.Bottom.Center(expandedWeightMenu, weightPanel, 2);
+            pivotPanel.Location = new Point(weightPanel.Right + 16, 2);
+            QOL.Align.Right(gravityPanel, pivotPanel, 16);
+        }
+
         public void Build()
         {
             built = true;
@@ -139,7 +121,7 @@ namespace Dropper
                 {
                     if (newWeight > 0)
                         targetBlock.Weight = Math.Min(newWeight, 100000);
-                    if (newWeight < 0)
+                    else if (newWeight < 0)
                         targetBlock.Weight = Math.Max(newWeight, -100000);
                 }
                 else
@@ -161,6 +143,13 @@ namespace Dropper
         {
             Visible = false;
             Values.ForEach(x => x.Visible = false);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (e.Button == MouseButtons.Middle)
+                InitializeLocations();
         }
     }
 }

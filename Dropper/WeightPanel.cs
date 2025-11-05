@@ -48,7 +48,7 @@ namespace Dropper
                     ev.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
             };
 
-            weightDisplay = new TextBox()
+            weightDisplay = new CustomTextBox
             {
                 Anchor = AnchorStyles.Left,
                 TabStop = false,
@@ -65,8 +65,10 @@ namespace Dropper
                 {
                     if (newWeight > 0)
                         targetBlock.Weight = Math.Min(newWeight, 100000);
-                    if (newWeight < 0)
+                    else if (newWeight < 0)
                         targetBlock.Weight = Math.Max(newWeight, -100000);
+                    else
+                        targetBlock.Weight = 0;
                 }
                 else targetBlock.Weight = targetBlock.OriginalWeight;
                 UpdateWeightDisplay();

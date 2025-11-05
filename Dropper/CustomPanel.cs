@@ -7,8 +7,6 @@ namespace Dropper
     public class CustomPanel : Panel
     {
         public bool Draggable { get; set; } = false;
-        public Rectangle ParentBounds { get; set; } = Rectangle.Empty; // intended to be used in tandem with the drag logic
-        public bool Added { get; set; } = false;
 
         public CustomPanel()
         {
@@ -24,10 +22,9 @@ namespace Dropper
 
         private bool Dragging;
         private Point CursorPosition;
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            base.OnMouseDown(e);
 
+        private void DoMouseDown(MouseEventArgs e)
+        {
             if (!Draggable) return;
             CursorPosition = Cursor.Position;
             if (e.Button == MouseButtons.Right)
@@ -35,38 +32,29 @@ namespace Dropper
                 Dragging = true;
                 CursorPosition = Cursor.Position;
             }
-            //if (HasChildren)
-            //    foreach (Control control in Controls)
-            //        control.MouseDown += (s, ev) =>
-            //        {
-            //            if (ev.Button == MouseButtons.Right)
-            //            {
-            //                Dragging = true;
-            //                CursorPosition = Cursor.Position;
-            //            }
-            //        };
         }
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            base.OnMouseUp(e);
 
+        private void DoMouseUp(MouseEventArgs e)
+        {
             if (!Draggable) return;
             Dragging = false;
         }
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
 
+        private void DoMouseMove(MouseEventArgs e)
+        {
             if (!Draggable) return;
-            if (ParentBounds == Rectangle.Empty) return;
+            if (!Dragging) return;
+            if (Parent == null && Parent.ClientRectangle == Rectangle.Empty) return;
+
+            Rectangle parentBounds = Parent.ClientRectangle;
 
             if (Dragging)
             {
                 int deltaX = Cursor.Position.X - CursorPosition.X;
                 int deltaY = Cursor.Position.Y - CursorPosition.Y;
 
-                int nx = Math.Max(ParentBounds.Left, Math.Min(Location.X + deltaX, ParentBounds.Right - Width));
-                int ny = Math.Max(ParentBounds.Top, Math.Min(Location.Y + deltaY, ParentBounds.Bottom - Height));
+                int nx = Math.Max(parentBounds.Left, Math.Min(Location.X + deltaX, parentBounds.Right - Width));
+                int ny = Math.Max(parentBounds.Top, Math.Min(Location.Y + deltaY, parentBounds.Bottom - Height));
 
                 Bounds = new Rectangle(
                     new Point(
@@ -77,6 +65,54 @@ namespace Dropper
                 CursorPosition = Cursor.Position;
                 Invalidate();
             }
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            DoMouseDown(e);
+        }
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            DoMouseUp(e);
+        }
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            DoMouseMove(e);
+        }
+
+        private void WireControl(Control control)
+        {
+            control.MouseDown += DescendantMouseDown;
+            control.MouseUp += DescendantMouseUp;
+            control.MouseMove += DescendantMouseMove;
+
+            if (control.HasChildren)
+                foreach (Control c in control.Controls)
+                    WireControl(c);
+        }
+
+        private void UnwireControl(Control control)
+        {
+            control.MouseDown -= DescendantMouseDown;
+            control.MouseUp -= DescendantMouseUp;
+            control.MouseMove -= DescendantMouseMove;
+
+            if (control.HasChildren)
+                foreach (Control c in control.Controls)
+                    UnwireControl(c);
+        }
+
+        private void DescendantMouseDown(object sender, MouseEventArgs e) => DoMouseDown(e);
+        private void DescendantMouseUp(object sender, MouseEventArgs e) => DoMouseUp(e);
+        private void DescendantMouseMove(object sender, MouseEventArgs e) => DoMouseMove(e);
+
+        protected override void OnControlAdded(ControlEventArgs e)
+        {
+            base.OnControlAdded(e);
+            WireControl(e.Control);
         }
     }
 }
