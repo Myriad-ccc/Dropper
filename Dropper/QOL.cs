@@ -56,6 +56,10 @@ namespace Dropper
             return num *= Factorial(num - 1);
         }
 
+        public static void AutoWidth(Control control, float multiplier = 1f) => control.Width = (int)(TextRenderer.MeasureText(control.Text, control.Font).Width * multiplier);
+        public static void AutoHeight(Control control, float multiplier = 1f) => control.Height = (int)(TextRenderer.MeasureText(control.Text, control.Font).Height * multiplier);
+        public static void AutoSize(Control control, float multiplier = 1f) => control.Size = new Size((int)(TextRenderer.MeasureText(control.Text, control.Font).Width * multiplier), (int)(TextRenderer.MeasureText(control.Text, control.Font).Height * multiplier));
+
         public static class Align
         {
             private static int CheckGap(int? gap) => gap ?? 0;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Drawing.Printing;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -8,6 +7,7 @@ namespace Dropper
     public class LerpButton : Button
     {
         public bool On { get; set; }
+        private bool HoverAnimation { get; set; }
 
         public Color BaseColor { get; set; } = QOL.RGB(35);
         private readonly Color HoverColor = QOL.RGB(60);
@@ -21,9 +21,10 @@ namespace Dropper
         private float AnimationProgress;
         private float AnimationSpeed { get; set; } = 0.0175f;
 
-        public LerpButton(float? animationSpeed = null, Color? clickColor = null)
+        public LerpButton(float? animationSpeed = null, Color? clickColor = null, bool hoverAnimation = true)
         {
             ClickColor = clickColor;
+            HoverAnimation = hoverAnimation;
             AnimationSpeed = animationSpeed ?? AnimationSpeed;
 
             DoubleBuffered = true;
@@ -50,7 +51,7 @@ namespace Dropper
                 ClientRectangle,
                 ForeColor,
                 TextFormatFlags.HorizontalCenter
-                |TextFormatFlags.VerticalCenter);
+                | TextFormatFlags.VerticalCenter);
 
             if (ShowBorder)
                 using (var borderPen = new Pen(BorderHoverColor, 2f))
@@ -87,7 +88,8 @@ namespace Dropper
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
-            StartAnimation(HoverColor);
+            if (HoverAnimation)
+                StartAnimation(HoverColor);
             ShowBorder = true;
         }
 
@@ -108,7 +110,8 @@ namespace Dropper
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            StartAnimation(HoverColor);
+            if (HoverAnimation)
+                StartAnimation(HoverColor);
         }
     }
 }

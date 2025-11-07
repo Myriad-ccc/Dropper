@@ -92,7 +92,10 @@ namespace Dropper
 
                 if (show) toolBar.Visible = true;
                 timer.Start();
-            };
+            };            
+
+            floor.Height = 32;
+            floor.Dock = DockStyle.Bottom;
 
             var viewConfigInitial = new Point(Width / 4, controlBar.Bottom);
             viewConfig = new ViewConfig
@@ -101,17 +104,16 @@ namespace Dropper
                 //Visible = false,
                 Location = viewConfigInitial
             };
+            Controls.Add(viewConfig);
+            viewConfig.BringToFront();
+
             viewConfig.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Middle)
                     Location = viewConfigInitial;
             };
 
-            Controls.Add(viewConfig);
             controlBar.ShowViewConfig += () => viewConfig.Visible = !viewConfig.Visible;
-
-            floor.Height = 32;
-            floor.Dock = DockStyle.Bottom;
 
             gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
             gameArea.SplitBlock += block => blocks.Split(block);

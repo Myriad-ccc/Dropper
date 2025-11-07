@@ -132,7 +132,8 @@ namespace Dropper
                         button.ForeColor = button.On ? Color.CornflowerBlue : Color.White;
                         ConfigTrigger.ForeColor = ConfigButtons.All(x => x.On) ? Color.MediumPurple : Color.White;
 
-                        ShowViewConfig?.Invoke();
+                        if (b == 0)
+                            ShowViewConfig?.Invoke();
                     }
                 };
             }
@@ -148,7 +149,6 @@ namespace Dropper
             minimizeButton.Size = closingButton.Size;
             QOL.Align.Left(minimizeButton, closingButton, 4);
         }
-
         public void Drag()
         {
             bool MouseDragging = false;
