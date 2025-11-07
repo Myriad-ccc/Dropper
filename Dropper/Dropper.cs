@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -12,11 +10,13 @@ namespace Dropper
         private Gravity gravity;
 
         private ControlBar controlBar;
+        private CustomPanel PanelOptions;
+        private CustomPanel ConfigOptions;
         private ToolBarPanel toolBar;
         private GameArea gameArea;
         private Floor floor;
 
-        private CustomPanel PanelOptions;
+        private ViewConfig viewConfig;
 
         public Form1() => InitializeComponent();
 
@@ -35,16 +35,22 @@ namespace Dropper
             gravity.SplitBlock += block => blocks.Split(block);
 
             toolBar = new ToolBarPanel(gravity);
-            PanelOptions = new CustomPanel()
+            PanelOptions = new CustomPanel
             {
                 Height = 160,
                 BackColor = QOL.RandomColor(),
             };
-            controlBar = new ControlBar(toolBar, PanelOptions);
+            ConfigOptions = new CustomPanel
+            {
+                Height = 160,
+                BackColor = QOL.RandomColor(),
+            };
+            controlBar = new ControlBar(toolBar, PanelOptions, ConfigOptions);
             gameArea = new GameArea();
             floor = new Floor();
 
             Controls.Add(PanelOptions);
+            Controls.Add(ConfigOptions);
             Controls.Add(toolBar);
             Controls.Add(gameArea);
             Controls.Add(controlBar);
@@ -58,9 +64,6 @@ namespace Dropper
             toolBar.Size = new Size(ClientSize.Width, 0);
             toolBar.Location = new Point(0, controlBar.Bottom);
             toolBar.Hide();
-
-            floor.Height = 32;
-            floor.Dock = DockStyle.Bottom;
 
             controlBar.ShowToolBar += show =>
             {
@@ -90,6 +93,26 @@ namespace Dropper
                 if (show) toolBar.Visible = true;
                 timer.Start();
             };
+
+            var viewConfigInitial = new Point(Width / 4, controlBar.Bottom);
+            viewConfig = new ViewConfig
+            {
+                Size = new Size(Width / 2, gameArea.Height),
+                //Visible = false,
+                Location = viewConfigInitial
+            };
+            viewConfig.MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Middle)
+                    Location = viewConfigInitial;
+            };
+
+            Controls.Add(viewConfig);
+            controlBar.ShowViewConfig += () => viewConfig.Visible = !viewConfig.Visible;
+
+            floor.Height = 32;
+            floor.Dock = DockStyle.Bottom;
+
             gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
             gameArea.SplitBlock += block => blocks.Split(block);
 
@@ -171,7 +194,6 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-
         private void ConfigureBlock(Block block)
         {
             block.OriginalWeight = block.Weight;

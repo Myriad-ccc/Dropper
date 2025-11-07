@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Printing;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -29,7 +30,6 @@ namespace Dropper
             TabStop = false;
             FlatAppearance.BorderSize = 0;
             FlatStyle = FlatStyle.Flat;
-            TextAlign = ContentAlignment.MiddleCenter;
             ForeColor = Color.White;
 
             CurrentColor = TargetColor = BaseColor;
@@ -50,7 +50,7 @@ namespace Dropper
                 ClientRectangle,
                 ForeColor,
                 TextFormatFlags.HorizontalCenter
-                | TextFormatFlags.VerticalCenter);
+                |TextFormatFlags.VerticalCenter);
 
             if (ShowBorder)
                 using (var borderPen = new Pen(BorderHoverColor, 2f))

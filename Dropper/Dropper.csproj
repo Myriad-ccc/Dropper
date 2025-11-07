@@ -98,6 +98,9 @@
     <Compile Include="TrackBarOverlayed.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="ViewConfig.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="WeightPanel.cs">
       <SubType>Component</SubType>
     </Compile>

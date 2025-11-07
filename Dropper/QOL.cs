@@ -14,7 +14,7 @@ namespace Dropper
         public static int RandomInt(int max, int? min = null) => random.Next(min ?? 0, max);
 
         public static Color RandomColor() => Color.FromArgb(255, RandomInt(256), RandomInt(256), RandomInt(256));
-        public static Color RGB(int v1, int? v2 = null, int? v3 = null) => Color.FromArgb(255, v1, v2 ?? v1, v3 ?? v1);
+        public static Color RGB(int v1, int? v2 = null, int? v3 = null, int v4 = 255) => Color.FromArgb(v4, v1, v2 ?? v1, v3 ?? v1);
 
         public static void WriteOut(object o) => MessageBox.Show($"{o}");
         public static void QuickWriteOut(Func<object> getter, Control surface)

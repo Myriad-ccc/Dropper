@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Media;
@@ -96,23 +95,23 @@ namespace Dropper
                         block.Bounds.Width,
                         block.Bounds.Height);
 
-                if (debug)
-                    using (var brush = new SolidBrush(Color.IndianRed))
-                    {
-                        var font = new Font(QOL.VCROSDMONO, 20f);
-                        var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
-                        g.DrawString(
-                            $"{block.Weight:F0}",
-                            new Font(QOL.VCROSDMONO, 16f),
-                            brush,
-                            new PointF(
-                                block.Left + size.Width / 8,
-                                block.Top + size.Height / 2));
-                    }
-            }
-
-        }
+                    if (debug)
+                        using (var brush = new SolidBrush(Color.IndianRed))
+                        {
+                            var font = new Font(QOL.VCROSDMONO, 20f);
+                            var size = TextRenderer.MeasureText(block.Weight.ToString(), font);
+                            g.DrawString(
+                                $"{block.Weight:F0}",
+                                new Font(QOL.VCROSDMONO, 16f),
+                                brush,
+                                new PointF(
+                                    block.Left + size.Width / 8,
+                                    block.Top + size.Height / 2));
+                        }
                 }
+
+            }
+        }
 
         private void Clicks()
         {

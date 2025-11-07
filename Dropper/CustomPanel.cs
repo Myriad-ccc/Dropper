@@ -8,8 +8,10 @@ namespace Dropper
     {
         public bool Draggable { get; set; } = false;
 
-        public CustomPanel()
+        public CustomPanel(bool draggable = false)
         {
+            Draggable = draggable;
+
             DoubleBuffered = true;
             TabStop = false;
             SetStyle(

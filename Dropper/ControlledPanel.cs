@@ -19,27 +19,27 @@ namespace Dropper
 
         public ControlledPanel(
             LerpButton trigger, CustomPanel options,
-            LerpButton[] optionButtons, string[] names,
+            int buttons, string[] names,
             int animationSpeed = 5
             )
         {
             Trigger = trigger;
             Options = options;
             AnimationSpeed = animationSpeed;
-            TargetHeight = options.Height;
+            TargetHeight = buttons * 32;
 
             options.Visible = false;
             options.Width = Trigger.Width;
             options.Height = 0;
 
-            for (int i = 0; i < optionButtons.Length; i++)
+            for (int i = 0; i < buttons; i++)
             {
                 var button = new LerpButton()
                 {
                     TabStop = false,
                     FlatStyle = FlatStyle.Flat,
-                    Size = new Size(Options.Width, TargetHeight / names.Length),
-                    Location = new Point(0, i * (TargetHeight / names.Length)),
+                    Size = new Size(Options.Width, 32),
+                    Location = new Point(0, i * 32),
                     Font = new Font(QOL.VCROSDMONO, 16f),
                     Text = names[i],
                 };
@@ -65,7 +65,7 @@ namespace Dropper
                         Options.Height = 0;
                         Options.Visible = false;
                         AnimationTimer.Stop();
-                        AnimationSpeed = Math.Min(++AnimationSpeed, 10);
+                        AnimationSpeed = Math.Min(++AnimationSpeed, animationSpeed + 5);
                     }
                 }
             };
