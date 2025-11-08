@@ -36,7 +36,7 @@ namespace Dropper
         public float Restituion { get; set; } = 0.70f;
 
         public bool CanBounce { get; set; } = true;
-        public List<Crack> Cracks = new List<Crack>();
+        public List<Crack> Cracks = [];
 
         public float X => Location.X;
         public float Y => Location.Y;
@@ -156,35 +156,34 @@ namespace Dropper
             Bounds = new RectangleF(new PointF(nx, ny), new SizeF(nw, nh));
         }
 
-        public Block Copy()
+        public Block Copy() => new()
         {
-            return new Block()
-            {
-                Bounds = this.Bounds,
-                Active = this.Active,
-                MouseDragging = this.MouseDragging,
-                UserBounds = this.UserBounds,
-                ActiveColor = this.ActiveColor,
-                InactiveColor = this.InactiveColor,
-                ActiveBorderColor = this.ActiveBorderColor,
-                InactiveBorderColor = this.InactiveBorderColor,
-                Weight = this.Weight,
-                OriginalWeight = this.OriginalWeight,
-                MagneticCore = this.MagneticCore,
-                VX = this.VX,
-                VY = this.VY,
-                Restituion = this.Restituion,
-                CanBounce = this.CanBounce,
-                Cracks = new List<Crack>(this.Cracks),
-                Gravity = this.Gravity,
-            };
-        }
+            Bounds = Bounds,
+            Active = Active,
+            MouseDragging = MouseDragging,
+            UserBounds = UserBounds,
+            ActiveColor = ActiveColor,
+            InactiveColor = InactiveColor,
+            ActiveBorderColor = ActiveBorderColor,
+            InactiveBorderColor = InactiveBorderColor,
+            Weight = Weight,
+            OriginalWeight = OriginalWeight,
+            MagneticCore = MagneticCore,
+            VX = VX,
+            VY = VY,
+            Restituion = Restituion,
+            CanBounce = CanBounce,
+            Cracks = [.. Cracks],
+            Gravity = Gravity,
+        };
 
         public static Block Clone(Block source)
         {
             if (source == null) return null;
             return source.Copy();
         }
+
+        public void Crack() => Cracks.Add(new Crack(this));
     }
 
     public class Crack
@@ -268,7 +267,7 @@ namespace Dropper
     {
         private readonly Random random = new Random();
 
-        public static List<Block> Stack { get; set; } = new List<Block>();
+        public static List<Block> Stack { get; set; } = [];
         public Block Target { get; set; }
 
         public event Action<Block> ChangeFocus;

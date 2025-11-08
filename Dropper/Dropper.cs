@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
+using static Dropper.InstanceData;
 
 namespace Dropper
 {
@@ -17,6 +20,7 @@ namespace Dropper
         private Floor floor;
 
         private ViewConfig viewConfig;
+        public static readonly string instanceSavePath = Path.Combine(Application.StartupPath, "DropperStateSave.json");
 
         public Form1() => InitializeComponent();
 
@@ -24,7 +28,128 @@ namespace Dropper
         {
             ConfigureForm();
             HoodooVoodooBlockMagic();
+            AddPanels();
+            ConfigurePanels();
+            if (Blocks.Stack.Count == 0) blocks.Add();
+            LoadState();
+            gravity.Start(Blocks.Stack);
 
+            var label = new Label()
+            {
+                Text = "Saving",
+                ForeColor = Color.Green,
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                AutoSize = true
+            };
+            controlBar.Controls.Add(label);
+            label.Location = new Point(Width - 128 - TextRenderer.MeasureText(label.Text, label.Font).Width, 0);
+
+            if (!File.Exists(instanceSavePath))
+                label.ForeColor = Color.Red;
+        }
+
+        private void ConfigureForm()
+        {
+            Text = "Dropper";
+            FormBorderStyle = FormBorderStyle.None;
+            Size = new Size(1024, 896);
+            BackColor = QOL.RGB(20);
+            KeyPreview = true;
+            DoubleBuffered = true;
+            CenterToScreen();
+
+            FormClosing += Form1_Closing;
+        }
+        private void Form1_Closing(object sender, EventArgs e)
+        {
+            SaveState();
+            Application.RemoveMessageFilter(toolBar.weightPanel.WeightDisplayFilter);
+        }
+        private void SaveState()
+        {
+            try
+            {
+                var currentInstanceState = new AppState //form
+                {
+                    GravityX = gravity.X,
+                    GravityY = gravity.Y,
+                    Blocks = []
+                };
+
+                foreach (var block in Blocks.Stack) //blocks
+                {
+                    currentInstanceState.Blocks.Add(new BlockData
+                    {
+                        Bounds = block.Bounds,
+                        Weight = block.Weight,
+                        Gravity = block.Gravity,
+                        CrackCount = block.Cracks.Count,
+                        ActiveColor = block.ActiveColor,
+                        Active = block == blocks.Target,
+                        InactiveColor = block.InactiveColor,
+                        OriginalWeight = block.OriginalWeight,
+                        ActiveBorderColor = block.ActiveBorderColor,
+                        InactiveBorderColor = block.InactiveBorderColor
+                    });
+                }
+
+                string jsonString = JsonConvert.SerializeObject(currentInstanceState, Formatting.Indented);
+                if (File.Exists(instanceSavePath))
+                    File.WriteAllText(instanceSavePath, jsonString);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save state: {ex.Message}");
+            }
+        }
+        private void LoadState()
+        {
+            if (!File.Exists(instanceSavePath))
+                return;
+
+            try
+            {
+                string jsonString = File.ReadAllText(instanceSavePath);
+                AppState lastInstanceState = JsonConvert.DeserializeObject<AppState>(jsonString);
+
+                gravity.X = lastInstanceState.GravityX; //form
+                gravity.Y = lastInstanceState.GravityY;
+
+                Blocks.Stack.Clear();
+                foreach (var blockData in lastInstanceState.Blocks) //blocks
+                {
+                    var newBlock = new Block
+                    {
+                        Active = blockData.Active,
+                        Weight = blockData.Weight,
+                        Bounds = blockData.Bounds,
+                        Gravity = blockData.Gravity,
+                        ActiveColor = blockData.ActiveColor,
+                        UserBounds = gameArea.ClientRectangle,
+                        InactiveColor = blockData.InactiveColor,
+                        OriginalWeight = blockData.OriginalWeight,
+                        ActiveBorderColor = blockData.ActiveBorderColor,
+                        InactiveBorderColor = blockData.InactiveBorderColor,
+                    };
+                    BlockMagneticCore(newBlock);
+
+                    for (int i = 0; i < blockData.CrackCount; i++)
+                        newBlock.Crack();
+
+                    Blocks.Stack.Add(newBlock);
+
+                    if (blockData.Active)
+                        ChangeFocusedBlock(newBlock);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load state: {ex.Message}. Loading defaults.");
+            }
+        }
+
+        private void AddPanels()
+        {
             blocks = new Blocks();
             blocks.Redraw += () => gameArea.Invalidate();
             blocks.ChangeFocus += block => ChangeFocusedBlock(block);
@@ -55,7 +180,9 @@ namespace Dropper
             Controls.Add(gameArea);
             Controls.Add(controlBar);
             Controls.Add(floor);
-
+        }
+        private void ConfigurePanels()
+        {
             gameArea.Dock = DockStyle.Fill;
 
             controlBar.Height = 54;
@@ -77,7 +204,6 @@ namespace Dropper
                         gameArea.Width, // UPDATE!!: 54 is controlbar's width. 44 remains a complete mystery
                     gameArea.Height - (show ? 98 : 0)); //UPDATE 2: replacing -54 with -controlBar.Height breaks everything. i am mystified
 
-
                 timer.Tick += (s, ev) =>
                 {
                     int step = show ? 5 : -5;
@@ -92,7 +218,7 @@ namespace Dropper
 
                 if (show) toolBar.Visible = true;
                 timer.Start();
-            };            
+            };
 
             floor.Height = 32;
             floor.Dock = DockStyle.Bottom;
@@ -101,7 +227,7 @@ namespace Dropper
             viewConfig = new ViewConfig
             {
                 Size = new Size(Width / 2, gameArea.Height),
-                //Visible = false,
+                Visible = false,
                 Location = viewConfigInitial
             };
             Controls.Add(viewConfig);
@@ -110,54 +236,45 @@ namespace Dropper
             viewConfig.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Middle)
-                    Location = viewConfigInitial;
+                    viewConfig.Location = viewConfigInitial;
             };
 
             controlBar.ShowViewConfig += () => viewConfig.Visible = !viewConfig.Visible;
 
             gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
             gameArea.SplitBlock += block => blocks.Split(block);
-
-            blocks.Add();
-            gravity.Start(Blocks.Stack);
-            //KeyMovement();
         }
 
-        private void ConfigureForm()
+        private void ConfigureBlock(Block block)
         {
-            Text = "Dropper";
-            FormBorderStyle = FormBorderStyle.None;
-            Size = new Size(1024, 896);
-            BackColor = QOL.RGB(20);
-            KeyPreview = true;
-            DoubleBuffered = true;
-            CenterToScreen();
-
-            FormClosing += (s, ev) => //might be leaving some timers running unintentionally
-                Application.RemoveMessageFilter(toolBar.weightPanel.WeightDisplayFilter);
+            block.OriginalWeight = block.Weight;
+            block.UserBounds = gameArea.ClientRectangle;
+            BlockToStartingPoint(block);
+            BlockMagneticCore(block);
         }
+        private void BlockToStartingPoint(Block block) =>
+            block.Bounds = new RectangleF(
+                new PointF(
+                    (int)(gameArea.Width / 2 - block.W / 2),
+                    (int)(gameArea.ClientSize.Height - block.H)),
+                block.Size);
+        private void BlockMagneticCore(Block block) =>
+            block.MagneticCore = new Point(
+                (int)(gameArea.Width / 2 - block.W / 2),
+                (int)(gameArea.Height / 2 - block.H / 2));
         private void ChangeFocusedBlock(Block block)
         {
             if (block == blocks.Target)
                 return;
 
-            if (blocks.Target != null)
-                blocks.Target.Active = false;
+            blocks.Target?.Active = false;
             blocks.Target = block;
             blocks.Target.Active = true;
 
             toolBar.SetTarget(block);
             gameArea.Invalidate();
         }
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        {
-            if (keyData == Keys.Enter)
-            {
-                blocks.Add();
-                return true;
-            }
-            return base.ProcessCmdKey(ref msg, keyData);
-        }
+
         private void HoodooVoodooBlockMagic()
         {
             bool spaceDown = false;
@@ -196,19 +313,14 @@ namespace Dropper
                     eventResolved = false;
             };
         }
-        private void ConfigureBlock(Block block)
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            block.OriginalWeight = block.Weight;
-            block.UserBounds = gameArea.ClientRectangle;
-
-            Block.StartPoint = new Point(
-                (int)(gameArea.Width / 2 - block.W / 2),
-                (int)(gameArea.ClientSize.Height - block.H));
-            block.Bounds = new RectangleF(Block.StartPoint, block.Size);
-
-            block.MagneticCore = new Point(
-                (int)(gameArea.Width / 2 - block.W / 2),
-                (int)(gameArea.Height / 2 - block.H / 2));
+            if (keyData == Keys.Enter)
+            {
+                blocks.Add();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
     }
 }

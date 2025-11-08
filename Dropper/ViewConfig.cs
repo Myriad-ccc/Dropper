@@ -7,174 +7,180 @@ namespace Dropper
     public class ViewConfig : CustomPanel //temporary
     {
         public bool On;
-
+        private Point InitialLocation;
+        private bool InitialLocationSet = false;
         private Size FullSize;
         private bool FullSizeSet;
-
-        private LerpButton instance;
-        private LerpButton config;
-
-        private Label warning;
-        private Size warningSize;
-        private Label prompt;
-        private LerpButton yes;
-        private LerpButton no;
+        private readonly LerpButton instanceTrigger;
+        private readonly InstancePanel1 instancePanel;
+        private readonly LerpButton configTrigger;
+        private readonly ConfigPanel1 configPanel;
 
         public ViewConfig()
         {
             Draggable = true;
             BackColor = Color.FromArgb(100, 40, 40, 40);
 
-            instance = new LerpButton(hoverAnimation:false)
+            instanceTrigger = new LerpButton(animate: false)
             {
                 Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "Instance",
             };
-            Controls.Add(instance);
+            Controls.Add(instanceTrigger);
 
-            void UpdateBaseColor(LerpButton button)
-            {
-                button.BaseColor = button.On ? QOL.RGB(50) : QOL.RGB(35);
-                button.Invalidate();
-            }
+            instancePanel = new InstancePanel1();
+            Controls.Add(instancePanel);
 
-            instance.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left)
-                {
-                    instance.On = !instance.On;
-                    UpdateBaseColor(instance);
-                    if (config != null)
-                    {
-                        config.On = !instance.On;
-                        UpdateBaseColor(config);
-                    }
-                }
-            };
-
-            config = new LerpButton(hoverAnimation:false)
+            configTrigger = new LerpButton(animate: false)
             {
                 Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "Config",
                 AutoSize = true,
             };
-            QOL.Align.Bottom.Center(config, instance);
-            Controls.Add(config);
+            QOL.Align.Bottom.Center(configTrigger, instanceTrigger);
+            Controls.Add(configTrigger);
 
-            config.MouseDown += (s, ev) =>
+            configPanel = new ConfigPanel1();
+            Controls.Add(configPanel);
+
+            instanceTrigger.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
                 {
-                    config.On = !config.On;
-                    UpdateBaseColor(config);
-                    if (instance != null)
-                    {
-                        instance.On = !config.On;
-                        UpdateBaseColor(instance);
-                    }
+                    TogglePanels(instanceTrigger, instancePanel, configTrigger, configPanel);
                 }
             };
 
-            //if (!File.Exists("Droptions.txt"))
-            //{
-            //    warning = new Label
-            //    {
-            //        BackColor = Color.Transparent,
-            //        ForeColor = Color.Crimson,
-            //        Text = "Droptions.txt does not exist!",
-            //        Font = new Font(QOL.VCROSDMONO, 21f),
-            //        AutoSize = true,
-            //    };
-            //    warningSize = TextRenderer.MeasureText(warning.Text, warning.Font);
-            //    Controls.Add(warning);
-
-            //    prompt = new Label
-            //    {
-            //        BackColor = Color.Transparent,
-            //        ForeColor = Color.White,
-            //        Text = $"Allow a txt file to be created in the same directory as Dropper.exe to allow custom config?",
-            //        Font = new Font(QOL.VCROSDMONO, 16f),
-            //        AutoSize = true,
-            //    };
-            //    Controls.Add(prompt);
-
-            //    yes = new LerpButton
-            //    {
-            //        BackColor = BackColor,
-            //        ForeColor = Color.Green,
-            //        Font = new Font(QOL.VCROSDMONO, 16f),
-            //        Text = "yes",
-            //        AutoSize = true,
-            //    };
-            //    Controls.Add(yes);
-            //    yes.MouseDown += (s, ev) =>
-            //    {
-            //        if (ev.Button == MouseButtons.Left)
-            //        {
-            //            File.Create("Droptions.txt").Close();
-            //            foreach (Control control in Controls.OfType<Control>())
-            //                control.Dispose();
-            //            Controls.Clear();
-            //            Refresh();
-            //        }
-            //    };
-
-            //    no = new LerpButton
-            //    {
-            //        BackColor = BackColor,
-            //        ForeColor = Color.Red,
-            //        Font = new Font(QOL.VCROSDMONO, 16f),
-            //        Text = "no",
-            //        AutoSize = true,
-            //    };
-            //    Controls.Add(no);
-            //}
-            //File.Delete("Droptions.txt");
+            configTrigger.MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left)
+                {
+                    TogglePanels(configTrigger, configPanel, instanceTrigger, instancePanel);
+                }
+            };
         }
+
+        private void UpdateColor(LerpButton button)
+        {
+            button.CurrentColor = button.On ? QOL.RGB(50) : QOL.RGB(35);
+            button.Invalidate();
+        }
+
+        private void TogglePanels(LerpButton activeButton, CustomPanel activePanel, LerpButton inactiveButton, CustomPanel inactivePanel)
+        {
+            inactiveButton.On = inactivePanel.Visible = activeButton.On && inactiveButton.On;
+            UpdateColor(inactiveButton);
+            activeButton.On = activePanel.Visible = !activeButton.On && !inactiveButton.On;
+            UpdateColor(activeButton);
+        }
+
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
-
             if (!FullSizeSet)
             {
                 FullSize = Size;
                 FullSizeSet = true;
             }
 
-            if (instance != null)
+            if (instanceTrigger != null)
             {
-                QOL.AutoHeight(instance, 1.5f);
-                instance.Location = Point.Empty;
-                instance.Width = Width / 2;
-            }
-            if (config != null)
-            {
-                QOL.AutoHeight(config, 1.5f);
-                config.Location = new Point(Width / 2, 0);
-                config.Width = Width / 2;
+                QOL.AutoHeight(instanceTrigger, 1.5f);
+                instanceTrigger.Location = Point.Empty;
+                instanceTrigger.Width = Width / 2;
+
+                if (instancePanel != null)
+                {
+                    instancePanel.Location = new Point(0, instanceTrigger.Bottom);
+                    instancePanel.Size = new Size(Width, Height - instanceTrigger.Height);
+                }
             }
 
-            if (warning != null)
-                warning.Location = new Point(Width / 2 - warningSize.Width / 2, 0);
-            if (prompt != null)
+            if (configTrigger != null)
             {
-                prompt.Location = new Point(0, warning.Location.Y + warningSize.Height + 10);
-                prompt.MaximumSize = new Size(Width - 10, 0);
+                QOL.AutoHeight(configTrigger, 1.5f);
+                configTrigger.Location = new Point(Width / 2, 0);
+                configTrigger.Width = Width / 2;
+
+                if (configPanel != null)
+                {
+                    configPanel.Location = new Point(0, configTrigger.Bottom);
+                    configPanel.Size = new Size(Width, Height - configTrigger.Height);
+                }
             }
-            if (yes != null)
-                yes.Location = new Point(0, prompt.Bottom);
-            if (no != null)
-                QOL.Align.Right(no, yes, 5);
+        }
+
+        protected override void OnLocationChanged(EventArgs e)
+        {
+            base.OnLocationChanged(e);
+            if (!InitialLocationSet)
+            {
+                InitialLocation = Location;
+                InitialLocationSet = true;
+            }
         }
 
         protected override void OnMouseDoubleClick(MouseEventArgs e)
         {
             base.OnMouseDoubleClick(e);
+            HandleMouseDoubleClick(e);
+        }
+
+        private void HandleMouseDoubleClick(MouseEventArgs e)
+        {
             if (e.Button == MouseButtons.Right)
             {
                 Visible = false;
                 On = false;
             }
+        }
+
+        private void DescendentMouseDoubleClick(object sender, MouseEventArgs e) => HandleMouseDoubleClick(e);
+
+        private void HandleMouseMiddleClick(MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Middle)
+                Location = InitialLocation;
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            HandleMouseMiddleClick(e);
+        }
+
+        private void DescendentMiddleClick(object sender, MouseEventArgs e) => HandleMouseMiddleClick(e);
+
+        private void WireControl(Control control)
+        {
+            control.MouseDoubleClick += DescendentMouseDoubleClick;
+            control.MouseDown += DescendentMiddleClick;
+
+            if (control.HasChildren)
+                foreach (Control c in control.Controls)
+                    WireControl(c);
+        }
+
+        private void UnwireControl(Control control)
+        {
+            control.MouseDoubleClick -= DescendentMouseDoubleClick;
+            control.MouseDown -= DescendentMiddleClick;
+
+            if (control.HasChildren)
+                foreach (Control c in control.Controls)
+                    UnwireControl(c);
+        }
+
+        protected override void OnControlAdded(ControlEventArgs e)
+        {
+            base.OnControlAdded(e);
+            WireControl(e.Control);
+        }
+
+        protected override void OnControlRemoved(ControlEventArgs e)
+        {
+            base.OnControlRemoved(e);
+            UnwireControl(e.Control);
         }
     }
 }

@@ -7,24 +7,24 @@ namespace Dropper
     public class LerpButton : Button
     {
         public bool On { get; set; }
-        private bool HoverAnimation { get; set; }
+        private bool Animate { get; set; }
 
         public Color BaseColor { get; set; } = QOL.RGB(35);
         private readonly Color HoverColor = QOL.RGB(60);
         private readonly Color BorderHoverColor = QOL.RGB(80);
         public Color? ClickColor { get; set; }
         private bool ShowBorder = false;
-        private Color CurrentColor;
+        public Color CurrentColor { get; set; }
 
         private Color TargetColor;
         private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
         private float AnimationProgress;
         private float AnimationSpeed { get; set; } = 0.0175f;
 
-        public LerpButton(float? animationSpeed = null, Color? clickColor = null, bool hoverAnimation = true)
+        public LerpButton(float? animationSpeed = null, Color? clickColor = null, bool animate = true)
         {
             ClickColor = clickColor;
-            HoverAnimation = hoverAnimation;
+            Animate = animate;
             AnimationSpeed = animationSpeed ?? AnimationSpeed;
 
             DoubleBuffered = true;
@@ -68,6 +68,7 @@ namespace Dropper
 
         private void StartAnimation(Color @new)
         {
+            if (!Animate) return;
             TargetColor = @new;
             AnimationProgress = 0f;
             AnimationTimer.Start();
@@ -88,8 +89,7 @@ namespace Dropper
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
-            if (HoverAnimation)
-                StartAnimation(HoverColor);
+            StartAnimation(HoverColor);
             ShowBorder = true;
         }
 
@@ -110,8 +110,7 @@ namespace Dropper
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            if (HoverAnimation)
-                StartAnimation(HoverColor);
+            StartAnimation(HoverColor);
         }
     }
 }
