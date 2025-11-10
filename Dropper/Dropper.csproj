@@ -56,7 +56,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ClickFilter.cs" />
-    <Compile Include="ConfigPanel1.cs">
+    <Compile Include="ConfigPanel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ControlledPanel.cs" />
@@ -89,7 +89,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="InstanceData.cs" />
-    <Compile Include="InstancePanel1.cs">
+    <Compile Include="InstancePanel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="LerpButton.cs">
@@ -110,7 +110,7 @@
     <Compile Include="TrackBarOverlayed.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="ViewConfig.cs">
+    <Compile Include="ConfigTab.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="WeightPanel.cs">

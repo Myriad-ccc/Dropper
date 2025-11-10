@@ -5,11 +5,11 @@ using System.Windows.Forms;
 
 namespace Dropper
 {
-    public class ConfigPanel1 : CustomPanel
+    public class ConfigPanel : CustomPanel
     {
         private readonly string SaveConfig = "Droptions.json";
 
-        public ConfigPanel1()
+        public ConfigPanel()
         {
             BackColor = Color.Transparent;
             Visible = false;

@@ -23,6 +23,7 @@ namespace Dropper
         {
             //public Point WindowLocation { get; set; } disabling this since its annoying
             //TODO:add currently active toolbar panels
+            public bool InstanceSaving { get; set; }
             public int GravityX { get; set; }
             public int GravityY { get; set; }
             public List<BlockData> Blocks { get; set; } = [];

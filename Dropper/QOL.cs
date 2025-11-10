@@ -7,7 +7,7 @@ namespace Dropper
 {
     public static class QOL
     {
-        private static readonly Random random = new Random();
+        private static readonly Random random = new();
         public static readonly string VCROSDMONO = "VCR OSD Mono";
         public const int GlobalTimerUpdateRate = 10;
 
@@ -26,17 +26,17 @@ namespace Dropper
             };
         }
 
-        public static void ClampControlWidth(Control control, int? gap = null)
+        public static void ClampControlWidth(Control control, int gap = 0)
         {
             if (control.Controls.Count == 0) return;
             int rightMost = control.Controls.Cast<Control>().Max(x => x.Right);
-            control.Bounds = new Rectangle(control.Location, new Size(rightMost + (gap ?? 0), control.Height));
+            control.Bounds = new Rectangle(control.Location, new Size(rightMost + gap, control.Height));
         }
-        public static void ClampControlHeight(Control control, int? gap = null)
+        public static void ClampControlHeight(Control control, int gap = 0)
         {
             if (control.Controls.Count == 0) return;
             int bottomMost = control.Controls.Cast<Control>().Max(x => x.Bottom);
-            control.Bounds = new Rectangle(control.Location, new Size(control.Width, bottomMost + (gap ?? 0)));
+            control.Bounds = new Rectangle(control.Location, new Size(control.Width, bottomMost + gap));
         }
         public static void ClampControlSize(Control control, int? widthGap = null, int? heightGap = null)
         {
@@ -62,78 +62,74 @@ namespace Dropper
 
         public static class Align
         {
-            private static int CheckGap(int? gap) => gap ?? 0;
-
-            public static void Left(Control thisControl, Control otherControl, int? gap = null, bool? top = null)
+            public static void Left(Control thisControl, Control otherControl, int gap = 0, int position = 0)
             {
-                int multiplier = top == false ? 1 : 0;
                 thisControl.Location = new Point(
-                    otherControl.Location.X - otherControl.Width - CheckGap(gap),
-                    otherControl.Location.Y + multiplier * (otherControl.Height - thisControl.Height));
+                    otherControl.Location.X - thisControl.Width - gap,
+                    (int)(otherControl.Location.Y + position * (0.5 * (otherControl.Height - thisControl.Height))));
             }
 
-            public static void Right(Control thisControl, Control otherControl, int? gap = null, bool? top = null)
+            public static void Right(Control thisControl, Control otherControl, int gap = 0, int position = 0)
             {
-                int multiplier = top == false ? 1 : 0;
                 thisControl.Location = new Point(
-                    otherControl.Location.X + otherControl.Width + CheckGap(gap),
-                    otherControl.Location.Y + multiplier * (otherControl.Height - thisControl.Height));
+                    otherControl.Location.X + otherControl.Width + gap,
+                    (int)(otherControl.Location.Y + (position * (0.5 * (otherControl.Height - thisControl.Height)))));
             }
 
             public static class Top
             {
-                public static void Left(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void Left(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X - thisControl.Width,
-                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+                        otherControl.Location.Y - thisControl.Height - gap);
 
-                public static void Center(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void Center(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X + otherControl.Width / 2 - thisControl.Width / 2,
-                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+                        otherControl.Location.Y - thisControl.Height - gap);
 
-                public static void LeftCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void LeftCenter(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X - thisControl.Width / 2,
-                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+                        otherControl.Location.Y - thisControl.Height - gap);
 
-                public static void RightCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void RightCenter(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X + otherControl.Width - thisControl.Width / 2,
-                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+                        otherControl.Location.Y - thisControl.Height - gap);
 
-                public static void Right(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void Right(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X + otherControl.Width,
-                        otherControl.Location.Y - thisControl.Height - CheckGap(gap));
+                        otherControl.Location.Y - thisControl.Height - gap);
             }
 
             public static class Bottom
             {
-                public static void Left(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void Left(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X,
-                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+                        otherControl.Location.Y + otherControl.Height + gap);
 
-                public static void Center(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void Center(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X,
-                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+                        otherControl.Location.Y + otherControl.Height + gap);
 
-                public static void LeftCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void LeftCenter(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X - thisControl.Width / 2,
-                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+                        otherControl.Location.Y + otherControl.Height + gap);
 
-                public static void RightCenter(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void RightCenter(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X + otherControl.Width - thisControl.Width / 2,
-                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+                        otherControl.Location.Y + otherControl.Height + gap);
 
-                public static void Right(Control thisControl, Control otherControl, int? gap = null) =>
+                public static void Right(Control thisControl, Control otherControl, int gap = 0) =>
                     thisControl.Location = new Point(
                         otherControl.Location.X + otherControl.Width,
-                        otherControl.Location.Y + otherControl.Height + CheckGap(gap));
+                        otherControl.Location.Y + otherControl.Height + gap);
             }
         }
 

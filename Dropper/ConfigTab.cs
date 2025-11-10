@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace Dropper
 {
-    public class ViewConfig : CustomPanel //temporary
+    public class ConfigTab : CustomPanel
     {
         public bool On;
         private Point InitialLocation;
@@ -12,27 +12,29 @@ namespace Dropper
         private Size FullSize;
         private bool FullSizeSet;
         private readonly LerpButton instanceTrigger;
-        private readonly InstancePanel1 instancePanel;
+        private readonly InstancePanel instancePanel;
         private readonly LerpButton configTrigger;
-        private readonly ConfigPanel1 configPanel;
+        private readonly ConfigPanel configPanel;
 
-        public ViewConfig()
+        public ConfigTab()
         {
             Draggable = true;
             BackColor = Color.FromArgb(100, 40, 40, 40);
 
-            instanceTrigger = new LerpButton(animate: false)
+            instanceTrigger = new LerpButton()
             {
+                Animate = false,
                 Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "Instance",
             };
             Controls.Add(instanceTrigger);
 
-            instancePanel = new InstancePanel1();
+            instancePanel = new InstancePanel();
             Controls.Add(instancePanel);
 
-            configTrigger = new LerpButton(animate: false)
+            configTrigger = new LerpButton()
             {
+                Animate = false,
                 Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "Config",
                 AutoSize = true,
@@ -40,23 +42,19 @@ namespace Dropper
             QOL.Align.Bottom.Center(configTrigger, instanceTrigger);
             Controls.Add(configTrigger);
 
-            configPanel = new ConfigPanel1();
+            configPanel = new ConfigPanel();
             Controls.Add(configPanel);
 
             instanceTrigger.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
-                {
-                    TogglePanels(instanceTrigger, instancePanel, configTrigger, configPanel);
-                }
+                    TogglePanels(instanceTrigger, instancePanel, configTrigger, configPanel);                
             };
 
             configTrigger.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
-                {
                     TogglePanels(configTrigger, configPanel, instanceTrigger, instancePanel);
-                }
             };
         }
 

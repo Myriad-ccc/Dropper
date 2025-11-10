@@ -1,1 +1,0 @@
-changed: area, controlbar, dropper, lerpbutton, pivotpanel, toolbarpanel

@@ -5,11 +5,11 @@ using System.Windows.Forms;
 
 namespace Dropper
 {
-    public class InstancePanel1 : CustomPanel
+    public class InstancePanel : CustomPanel
     {
         private readonly string instanceSavePath = Form1.instanceSavePath;
 
-        public InstancePanel1()
+        public InstancePanel()
         {
             BackColor = Color.Transparent;
             Visible = false;

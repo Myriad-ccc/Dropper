@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -11,15 +12,22 @@ namespace Dropper
         private readonly CustomButton closingButton;
         private readonly CustomButton minimizeButton;
 
-        private readonly List<ControlledPanel> Controllers = new List<ControlledPanel>();
+        private readonly List<ControlledPanel> Controllers = [];
+
         private readonly LerpButton PanelTrigger;
         private readonly ControlledPanel PanelController;
-        private readonly LerpButton ConfigTrigger;
-        private readonly ControlledPanel ConfigController;
+
+        private readonly LerpButton OptionTrigger;
+        private readonly ControlledPanel OptionController;
+        public event Action ShowOptions;
+
+        public bool instanceSaving { get; set; }
+        private readonly string instanceSaveLocation = Form1.instanceSavePath;
+        private readonly LerpButton instancingButton;
 
         public event Action<bool> ShowToolBar;
 
-        public ControlBar(ToolBarPanel toolBar, CustomPanel panelOptions, CustomPanel configOptions)
+        public ControlBar(ToolBarPanel toolBar, CustomPanel panelOptions, CustomPanel optionOptions)
         {
             Drag();
             BackColor = QOL.RGB(35);
@@ -95,22 +103,22 @@ namespace Dropper
                 };
             }
 
-            ConfigTrigger = new LerpButton(0.00005f, QOL.RandomColor())
+            OptionTrigger = new LerpButton(0.00005f, QOL.RandomColor())
             {
                 BackColor = QOL.RandomColor(),
                 Font = new Font(QOL.VCROSDMONO, 20f, FontStyle.Underline),
-                Text = "Config",
+                Text = "Options",
                 Height = 40,
             };
-            ConfigTrigger.Width = TextRenderer.MeasureText(ConfigTrigger.Text, ConfigTrigger.Font).Width;
-            Controls.Add(ConfigTrigger);
-            QOL.Align.Right(ConfigTrigger, PanelTrigger);
+            OptionTrigger.Width = TextRenderer.MeasureText(OptionTrigger.Text, OptionTrigger.Font).Width;
+            Controls.Add(OptionTrigger);
+            QOL.Align.Right(OptionTrigger, PanelTrigger);
 
-            string[] ConfigNames = { "View", "Block" };
-            ConfigController = new ControlledPanel(ConfigTrigger, configOptions, 2, ConfigNames);
-            Controllers.Add(ConfigController);
+            string[] optionNames = ["Config", "empty", "mpty", "mty", "mt"];
+            OptionController = new ControlledPanel(OptionTrigger, optionOptions, optionNames.Length, optionNames);
+            Controllers.Add(OptionController);
 
-            ConfigController.Showing += (s, ev) =>
+            OptionController.Showing += (s, ev) =>
             {
                 var showingController = s as ControlledPanel;
 
@@ -119,26 +127,66 @@ namespace Dropper
                         controller.Hide();
             };
 
-            var ConfigButtons = configOptions.Controls.OfType<LerpButton>().ToList();
-            for (int i = 0; i < ConfigButtons.Count; i++)
+            var OptionButtons = optionOptions.Controls.OfType<LerpButton>().ToList();
+            for (int i = 0; i < OptionButtons.Count; i++)
             {
                 int b = i;
-                var button = ConfigButtons[b];
+                var button = OptionButtons[b];
                 button.MouseDown += (se, e) =>
                 {
                     if (e.Button == MouseButtons.Left)
                     {
                         button.On = !button.On;
                         button.ForeColor = button.On ? Color.CornflowerBlue : Color.White;
-                        ConfigTrigger.ForeColor = ConfigButtons.All(x => x.On) ? Color.MediumPurple : Color.White;
+                        OptionTrigger.ForeColor = OptionButtons.All(x => x.On) ? Color.MediumPurple : Color.White;
 
                         if (b == 0)
-                            ShowViewConfig?.Invoke();
+                            ShowOptions?.Invoke();
                     }
                 };
             }
+            
+            instancingButton = new LerpButton()
+            {
+                Animate = true,
+                ShowBorder = false,
+                Font = new Font(QOL.VCROSDMONO, 20f),
+                Text = "Saving",
+            };
+            QOL.AutoWidth(instancingButton);
+            Controls.Add(instancingButton);
+            UpdateInstancingStatus();
+
+            instancingButton.MouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Left)
+                {
+                    if (!File.Exists(instanceSaveLocation))
+                    {
+                        File.Create(instanceSaveLocation).Close();
+                        instancingButton.Text = "Saving";
+                        QOL.AutoWidth(instancingButton);
+                        QOL.Align.Left(instancingButton, minimizeButton, gap: 8, position: 1);
+                    }
+                    instanceSaving = !instanceSaving;
+                    UpdateInstancingStatus();
+                }
+                else if (ev.Button == MouseButtons.Middle)
+                    instancingButton.Visible = false;
+            };
         }
-        public event Action ShowViewConfig;
+
+        public void UpdateInstancingStatus()
+        {
+            if (!File.Exists(instanceSaveLocation))
+            {
+                instancingButton.Text = "Not Saving";
+                QOL.AutoWidth(instancingButton);
+                instancingButton.ForeColor = QOL.RGB(163, 42, 42);
+                return;
+            }
+            instancingButton.ForeColor = instanceSaving ? Color.Green : Color.Gray;
+        }
 
         protected override void OnSizeChanged(EventArgs e)
         {
@@ -148,7 +196,10 @@ namespace Dropper
             closingButton.Location = new Point(ClientSize.Width - closingButton.Width);
             minimizeButton.Size = closingButton.Size;
             QOL.Align.Left(minimizeButton, closingButton, 4);
+            instancingButton.Height = 32;
+            QOL.Align.Left(instancingButton, minimizeButton, gap: 8,position:1);
         }
+
         public void Drag()
         {
             bool MouseDragging = false;

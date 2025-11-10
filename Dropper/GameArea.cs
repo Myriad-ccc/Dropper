@@ -10,7 +10,7 @@ namespace Dropper
     {
         public event Action<Block> FocusedBlockChanged;
         public event Action<Block> SplitBlock;
-        private bool debug = false;
+        private readonly bool displayWeight = false;
 
         public GameArea()
         {
@@ -53,7 +53,7 @@ namespace Dropper
                         block.Bounds.Height);
                 }
 
-                if (debug)
+                if (displayWeight)
                     using (var brush = new SolidBrush(Color.IndianRed))
                     {
                         var font = new Font(QOL.VCROSDMONO, 20f);
@@ -67,7 +67,6 @@ namespace Dropper
                                 block.Top + size.Height / 2));
                     }
             }
-
         }
         private void DrawActiveBlocks(Graphics g)
         {
@@ -95,7 +94,7 @@ namespace Dropper
                         block.Bounds.Width,
                         block.Bounds.Height);
 
-                    if (debug)
+                    if (displayWeight)
                         using (var brush = new SolidBrush(Color.IndianRed))
                         {
                             var font = new Font(QOL.VCROSDMONO, 20f);
@@ -109,7 +108,6 @@ namespace Dropper
                                     block.Top + size.Height / 2));
                         }
                 }
-
             }
         }
 

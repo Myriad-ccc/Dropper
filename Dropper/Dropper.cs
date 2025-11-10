@@ -14,12 +14,12 @@ namespace Dropper
 
         private ControlBar controlBar;
         private CustomPanel PanelOptions;
-        private CustomPanel ConfigOptions;
+        private CustomPanel CustomOptions;
         private ToolBarPanel toolBar;
         private GameArea gameArea;
         private Floor floor;
 
-        private ViewConfig viewConfig;
+        private ConfigTab configTab;
         public static readonly string instanceSavePath = Path.Combine(Application.StartupPath, "DropperStateSave.json");
 
         public Form1() => InitializeComponent();
@@ -33,19 +33,6 @@ namespace Dropper
             if (Blocks.Stack.Count == 0) blocks.Add();
             LoadState();
             gravity.Start(Blocks.Stack);
-
-            var label = new Label()
-            {
-                Text = "Saving",
-                ForeColor = Color.Green,
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                AutoSize = true
-            };
-            controlBar.Controls.Add(label);
-            label.Location = new Point(Width - 128 - TextRenderer.MeasureText(label.Text, label.Font).Width, 0);
-
-            if (!File.Exists(instanceSavePath))
-                label.ForeColor = Color.Red;
         }
 
         private void ConfigureForm()
@@ -71,6 +58,7 @@ namespace Dropper
             {
                 var currentInstanceState = new AppState //form
                 {
+                    InstanceSaving = controlBar.instanceSaving,
                     GravityX = gravity.X,
                     GravityY = gravity.Y,
                     Blocks = []
@@ -112,6 +100,12 @@ namespace Dropper
                 string jsonString = File.ReadAllText(instanceSavePath);
                 AppState lastInstanceState = JsonConvert.DeserializeObject<AppState>(jsonString);
 
+                controlBar.instanceSaving = lastInstanceState.InstanceSaving;
+                controlBar.UpdateInstancingStatus();
+
+                if (!lastInstanceState.InstanceSaving)
+                    return;
+
                 gravity.X = lastInstanceState.GravityX; //form
                 gravity.Y = lastInstanceState.GravityY;
 
@@ -152,7 +146,7 @@ namespace Dropper
         {
             blocks = new Blocks();
             blocks.Redraw += () => gameArea.Invalidate();
-            blocks.ChangeFocus += block => ChangeFocusedBlock(block);
+            blocks.ChangeFocus += ChangeFocusedBlock;
             blocks.ConfigureBlock += ConfigureBlock;
 
             gravity = new Gravity();
@@ -165,17 +159,17 @@ namespace Dropper
                 Height = 160,
                 BackColor = QOL.RandomColor(),
             };
-            ConfigOptions = new CustomPanel
+            CustomOptions = new CustomPanel
             {
                 Height = 160,
                 BackColor = QOL.RandomColor(),
             };
-            controlBar = new ControlBar(toolBar, PanelOptions, ConfigOptions);
+            controlBar = new ControlBar(toolBar, PanelOptions, CustomOptions);
             gameArea = new GameArea();
             floor = new Floor();
 
             Controls.Add(PanelOptions);
-            Controls.Add(ConfigOptions);
+            Controls.Add(CustomOptions);
             Controls.Add(toolBar);
             Controls.Add(gameArea);
             Controls.Add(controlBar);
@@ -224,25 +218,25 @@ namespace Dropper
             floor.Dock = DockStyle.Bottom;
 
             var viewConfigInitial = new Point(Width / 4, controlBar.Bottom);
-            viewConfig = new ViewConfig
+            configTab = new ConfigTab
             {
                 Size = new Size(Width / 2, gameArea.Height),
                 Visible = false,
                 Location = viewConfigInitial
             };
-            Controls.Add(viewConfig);
-            viewConfig.BringToFront();
+            Controls.Add(configTab);
+            configTab.BringToFront();
 
-            viewConfig.MouseDown += (s, ev) =>
+            configTab.MouseDown += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Middle)
-                    viewConfig.Location = viewConfigInitial;
+                    configTab.Location = viewConfigInitial;
             };
 
-            controlBar.ShowViewConfig += () => viewConfig.Visible = !viewConfig.Visible;
+            controlBar.ShowOptions += () => configTab.Visible = !configTab.Visible;
 
-            gameArea.FocusedBlockChanged += block => ChangeFocusedBlock(block);
-            gameArea.SplitBlock += block => blocks.Split(block);
+            gameArea.FocusedBlockChanged += ChangeFocusedBlock;
+            gameArea.SplitBlock += blocks.Split;
         }
 
         private void ConfigureBlock(Block block)

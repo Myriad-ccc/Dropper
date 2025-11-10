@@ -12,7 +12,7 @@ namespace Dropper
 
         public event EventHandler Showing;
 
-        private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
+        private readonly Timer AnimationTimer = new() { Interval = 10 };
         private int AnimationSpeed;
         private readonly int TargetHeight;
         private bool Expanding = false;

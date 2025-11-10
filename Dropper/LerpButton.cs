@@ -7,24 +7,23 @@ namespace Dropper
     public class LerpButton : Button
     {
         public bool On { get; set; }
-        private bool Animate { get; set; }
+        public bool Animate { get; set; } = true;
+        public bool ShowBorder { get; set; } = false;
 
         public Color BaseColor { get; set; } = QOL.RGB(35);
         private readonly Color HoverColor = QOL.RGB(60);
         private readonly Color BorderHoverColor = QOL.RGB(80);
         public Color? ClickColor { get; set; }
-        private bool ShowBorder = false;
         public Color CurrentColor { get; set; }
 
         private Color TargetColor;
-        private readonly Timer AnimationTimer = new Timer() { Interval = 10 };
+        private readonly Timer AnimationTimer = new() { Interval = 10 };
         private float AnimationProgress;
         private float AnimationSpeed { get; set; } = 0.0175f;
 
-        public LerpButton(float? animationSpeed = null, Color? clickColor = null, bool animate = true)
+        public LerpButton(float? animationSpeed = null, Color? clickColor = null)
         {
             ClickColor = clickColor;
-            Animate = animate;
             AnimationSpeed = animationSpeed ?? AnimationSpeed;
 
             DoubleBuffered = true;
@@ -90,14 +89,14 @@ namespace Dropper
         {
             base.OnMouseEnter(e);
             StartAnimation(HoverColor);
-            ShowBorder = true;
+            //ShowBorder = true;
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
             StartAnimation(BaseColor);
-            ShowBorder = false;
+            //ShowBorder = false;
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
