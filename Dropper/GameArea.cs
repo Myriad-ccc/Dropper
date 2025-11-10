@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Media;
 using System.Windows.Forms;
 
 namespace Dropper
@@ -23,7 +22,7 @@ namespace Dropper
                 DrawInactiveBlocks(g);
                 DrawActiveBlocks(g);
             };
-            Clicks();
+            ConfigureBlockInteractions();
         }
 
         private void DrawInactiveBlocks(Graphics g)
@@ -111,11 +110,11 @@ namespace Dropper
             }
         }
 
-        private void Clicks()
-        {
-            Block draggable = null;
-            PointF dragOffset = PointF.Empty;
+        private Block draggable = null;
+        private PointF dragOffset = PointF.Empty;
 
+        private void ConfigureBlockInteractions()
+        {
             MouseDown += (s, ev) =>
                 {
                     Block clicked = null;
@@ -148,8 +147,8 @@ namespace Dropper
                             {
                                 clicked.Cracks.Clear();
                                 SplitBlock.Invoke(clicked);
-                                var sp = new SoundPlayer(Properties.Resources.Hector);
-                                sp.Play();
+                                //var sp = new SoundPlayer(Properties.Resources.Hector);
+                                //sp.Play();
                             }
                             else
                                 clicked.Cracks.Add(new Crack(clicked));
@@ -180,6 +179,15 @@ namespace Dropper
 
                 Invalidate();
             };
+        }
+
+        public void RecalculateDragOffset()
+        {
+            if (draggable != null)
+            {
+                var mouse = PointToClient(Cursor.Position);
+                dragOffset = new PointF(mouse.X - draggable.X, mouse.Y - draggable.Y);
+            }
         }
     }
 }

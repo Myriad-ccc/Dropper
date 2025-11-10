@@ -63,6 +63,9 @@
     <Compile Include="CustomButton.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="CustomLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="CustomPanel.cs">
       <SubType>Component</SubType>
     </Compile>

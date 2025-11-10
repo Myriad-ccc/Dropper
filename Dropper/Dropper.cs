@@ -217,21 +217,13 @@ namespace Dropper
             floor.Height = 32;
             floor.Dock = DockStyle.Bottom;
 
-            var viewConfigInitial = new Point(Width / 4, controlBar.Bottom);
             configTab = new ConfigTab
             {
-                Size = new Size(Width / 2, gameArea.Height),
                 Visible = false,
-                Location = viewConfigInitial
+                Bounds = gameArea.Bounds
             };
             Controls.Add(configTab);
             configTab.BringToFront();
-
-            configTab.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Middle)
-                    configTab.Location = viewConfigInitial;
-            };
 
             controlBar.ShowOptions += () => configTab.Visible = !configTab.Visible;
 
@@ -290,6 +282,7 @@ namespace Dropper
                     else
                         if (blocks.Target.W <= gameArea.Width / 2 && blocks.Target.H <= gameArea.Height / 2)
                         blocks.Target.DoubleSize();
+                    gameArea.RecalculateDragOffset();
                     gameArea.Invalidate();
                 }
                 if (ev.KeyCode == Keys.Back)

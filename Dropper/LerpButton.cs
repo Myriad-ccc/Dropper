@@ -31,6 +31,7 @@ namespace Dropper
             FlatAppearance.BorderSize = 0;
             FlatStyle = FlatStyle.Flat;
             ForeColor = Color.White;
+            Font = new Font(QOL.VCROSDMONO, 20f);
 
             CurrentColor = TargetColor = BaseColor;
             AnimationTimer.Tick += AnimateColor;

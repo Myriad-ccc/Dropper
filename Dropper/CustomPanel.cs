@@ -66,6 +66,7 @@ namespace Dropper
 
                 CursorPosition = Cursor.Position;
                 Invalidate();
+                //Parent.Invalidate();
             }
         }
 

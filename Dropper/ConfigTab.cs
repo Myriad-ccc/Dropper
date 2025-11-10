@@ -7,105 +7,162 @@ namespace Dropper
     public class ConfigTab : CustomPanel
     {
         public bool On;
-        private Point InitialLocation;
+
+        public Point InitialLocation;
         private bool InitialLocationSet = false;
-        private Size FullSize;
-        private bool FullSizeSet;
-        private readonly LerpButton instanceTrigger;
-        private readonly InstancePanel instancePanel;
-        private readonly LerpButton configTrigger;
-        private readonly ConfigPanel configPanel;
+        public Size InitialSize;
+        private bool InitialSizeSet;
+
+        private readonly CustomLabel configLabel;
+
+        private readonly LerpButton closingButton;
+
+        private readonly LerpButton cancelButton;
+        private readonly LerpButton applyButton;
+
+        private readonly CustomPanel workArea;
+
 
         public ConfigTab()
         {
             Draggable = true;
-            BackColor = Color.FromArgb(100, 40, 40, 40);
+            BackColor = QOL.RGB(30);
 
-            instanceTrigger = new LerpButton()
+            configLabel = new CustomLabel(25f)
             {
-                Animate = false,
-                Font = new Font(QOL.VCROSDMONO, 20f),
-                Text = "Instance",
-            };
-            Controls.Add(instanceTrigger);
-
-            instancePanel = new InstancePanel();
-            Controls.Add(instancePanel);
-
-            configTrigger = new LerpButton()
-            {
-                Animate = false,
-                Font = new Font(QOL.VCROSDMONO, 20f),
                 Text = "Config",
                 AutoSize = true,
             };
-            QOL.Align.Bottom.Center(configTrigger, instanceTrigger);
-            Controls.Add(configTrigger);
+            Controls.Add(configLabel);
 
-            configPanel = new ConfigPanel();
-            Controls.Add(configPanel);
-
-            instanceTrigger.MouseDown += (s, ev) =>
+            closingButton = new LerpButton()
+            {
+                TextAlign = ContentAlignment.MiddleCenter,
+                BaseColor = QOL.RGB(22),
+                CurrentColor = QOL.RGB(22),
+                ClickColor = Color.Crimson,
+                ForeColor = QOL.RGB(163, 42, 42),
+                Font = new Font(QOL.VCROSDMONO, 28f),
+                Text = "✖",
+                Size = new Size(48, 48)
+            };
+            closingButton.MouseUp += (s, ev) =>
             {
                 if (ev.Button == MouseButtons.Left)
-                    TogglePanels(instanceTrigger, instancePanel, configTrigger, configPanel);                
-            };
-
-            configTrigger.MouseDown += (s, ev) =>
-            {
-                if (ev.Button == MouseButtons.Left)
-                    TogglePanels(configTrigger, configPanel, instanceTrigger, instancePanel);
-            };
-        }
-
-        private void UpdateColor(LerpButton button)
-        {
-            button.CurrentColor = button.On ? QOL.RGB(50) : QOL.RGB(35);
-            button.Invalidate();
-        }
-
-        private void TogglePanels(LerpButton activeButton, CustomPanel activePanel, LerpButton inactiveButton, CustomPanel inactivePanel)
-        {
-            inactiveButton.On = inactivePanel.Visible = activeButton.On && inactiveButton.On;
-            UpdateColor(inactiveButton);
-            activeButton.On = activePanel.Visible = !activeButton.On && !inactiveButton.On;
-            UpdateColor(activeButton);
-        }
-
-        protected override void OnSizeChanged(EventArgs e)
-        {
-            base.OnSizeChanged(e);
-            if (!FullSizeSet)
-            {
-                FullSize = Size;
-                FullSizeSet = true;
-            }
-
-            if (instanceTrigger != null)
-            {
-                QOL.AutoHeight(instanceTrigger, 1.5f);
-                instanceTrigger.Location = Point.Empty;
-                instanceTrigger.Width = Width / 2;
-
-                if (instancePanel != null)
                 {
-                    instancePanel.Location = new Point(0, instanceTrigger.Bottom);
-                    instancePanel.Size = new Size(Width, Height - instanceTrigger.Height);
+                    if (closingButton.Bounds.Contains(
+                        PointToClient(
+                            closingButton.PointToScreen(
+                                ev.Location))))
+                    {
+                        Location = InitialLocation;
+                        Visible = false;
+                        On = false;
+                    }
                 }
-            }
+            };
+            Controls.Add(closingButton);
 
-            if (configTrigger != null)
+            cancelButton = new LerpButton()
             {
-                QOL.AutoHeight(configTrigger, 1.5f);
-                configTrigger.Location = new Point(Width / 2, 0);
-                configTrigger.Width = Width / 2;
+                ShowBorder = true,
+                BaseColor = QOL.RGB(40),
+                CurrentColor = QOL.RGB(40),
+                Font = new Font(QOL.VCROSDMONO, 23f),
+                Text = "Cancel",
+                AutoSize = true,
+            };
+            Controls.Add(cancelButton);
 
-                if (configPanel != null)
+            applyButton = new LerpButton()
+            {
+                ShowBorder = true,
+                BaseColor = QOL.RGB(40),
+                CurrentColor = QOL.RGB(40),
+                Font = new Font(QOL.VCROSDMONO, 23f),
+                Text = "Apply",
+                AutoSize = true,
+            };
+            Controls.Add(applyButton);
+
+            workArea = new CustomPanel()
+            {
+                BackColor = QOL.RGB(15)
+            };
+            Controls.Add(workArea);
+
+            SizeChanged += (s, ev) =>
+            {
+                closingButton.Location = new Point(ClientSize.Width - closingButton.Width, 0);
+                cancelButton.Location = new Point(ClientSize.Width - cancelButton.Width, ClientSize.Height - cancelButton.Height);
+                QOL.Align.Left(applyButton, cancelButton);
+                workArea.Bounds = new Rectangle(0, closingButton.Bottom, ClientSize.Width, ClientSize.Height - closingButton.Bottom - applyButton.Height);
+                configLabel.Location = new Point((ClientSize.Width - closingButton.Width) / 2 - TextRenderer.MeasureText(configLabel.Text, configLabel.Font).Width / 2, workArea.Top / 2 - TextRenderer.MeasureText(configLabel.Text, configLabel.Font).Height / 2);
+
+                if (workArea == null) return;
+
+                var labelNames = new CustomPanel()
                 {
-                    configPanel.Location = new Point(0, configTrigger.Bottom);
-                    configPanel.Size = new Size(Width, Height - configTrigger.Height);
+                    BackColor = QOL.RGB(40),
+                    Width = 250,
+                    Height = workArea.Height
+                };
+                workArea.Controls.Add(labelNames);
+
+                var colors = new LerpButton()
+                {
+                    Text = "⬈Colors",
+                    AutoSize = true,
+                    Location = new Point()
+                };
+                labelNames.Controls.Add(colors);
+
+                var colorOptions = new FlowLayoutPanel
+                {
+                    BackColor = QOL.RGB(40),
+                    Visible = false,
+                    Location = new Point(0, colors.Bottom),
+                    Width = labelNames.Width,
+                    Height = labelNames.Height,
+                    FlowDirection = FlowDirection.TopDown,
+                    AutoSize = true,
+                };
+                labelNames.Controls.Add(colorOptions);
+
+                string[] names = { "Lerp Buttons", "Custom Panels", "Labels", "Empty", "Empty", "Empty", "Empty" };
+                foreach (var name in names)
+                {
+                    var button = new LerpButton
+                    {
+                        CurrentColor = QOL.RGB(40),
+                        BaseColor = QOL.RGB(40),
+                        Text = name,
+                        AutoSize = true,
+                        Margin = new Padding(0, 0, 0, 5) // spacing between buttons
+                    };
+                    colorOptions.Controls.Add(button);
                 }
-            }
+
+
+                bool colorsFolded = true;
+                colors.MouseClick += (s, ev) =>
+                {
+                    if (ev.Button == MouseButtons.Left)
+                    {
+                        colorsFolded = !colorsFolded;
+                        if (colorsFolded)
+                        {
+                            colorOptions.Visible = false;
+                            colors.Text = "⬈Colors";
+                        }
+                        else
+                        {
+                            colorOptions.Visible = true;
+                            colors.Text = "⬊Colors";
+                        }
+                    }
+                };
+            };
         }
 
         protected override void OnLocationChanged(EventArgs e)
@@ -114,6 +171,16 @@ namespace Dropper
             if (!InitialLocationSet)
             {
                 InitialLocation = Location;
+                InitialLocationSet = true;
+            }
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            if (!InitialSizeSet)
+            {
+                InitialSize = Size;
                 InitialLocationSet = true;
             }
         }
@@ -128,6 +195,7 @@ namespace Dropper
         {
             if (e.Button == MouseButtons.Right)
             {
+                Location = InitialLocation;
                 Visible = false;
                 On = false;
             }
